@@ -1,0 +1,5 @@
+armips/
+*.ps-exe
+*.exe
+*.bin
+*.AppImage
