@@ -3,3 +3,5 @@ armips/
 *.exe
 *.bin
 *.AppImage
+*.c.swp
+*.vscode
