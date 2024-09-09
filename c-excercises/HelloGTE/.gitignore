@@ -1,0 +1,10 @@
+PSX.Dev-README.md
+*.elf
+*.map
+*.cpe
+*.ps-exe
+*.dep
+*.o
+*.a
+*.vscode
+third_party/psyq
