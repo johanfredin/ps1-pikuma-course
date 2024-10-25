@@ -14,9 +14,7 @@
 
 #define OT_LENGTH 2048
 
-#define BD 128
-
-#define NUM_FACES 12
+#define NUM_FACES 6
 #define NUM_VERTICES 8
 
 typedef struct {
@@ -36,7 +34,6 @@ char primbuff[2][2048];	  // Primitive buffer that holds the actual data for eac
 char *nextprim;			  // Pointer to the next primitive in the primitive buffer
 
 POLY_G4 *polyg4;
-POLY_G3 *polyg3;
 
 SVECTOR vertices[] = {
 	{ -128, -128, -128 }, // Front top-left
@@ -52,23 +49,17 @@ SVECTOR vertices[] = {
 // Faces that are looking at us are in clockwise (->) order, faces looking away in counter-clockwise (<-) order
 short faces[] = {
 	// TOP
-	0, 3, 2, 	 // ftl -> btl -> btr
-	0, 2, 1, 	 // ftl -> btr -> ftr
+	3, 2, 0, 1,   // btl -> btr -> ftl -> ftr
 	// FRONT
-	4, 0, 1,	 // fbl -> ftl -> ftr
-	4, 1, 5,   // fbl -> ftr -> fbr
+	0, 1, 4, 5,	 // ftl -> ftr -> fbl -> fbr
 	// BOTTOM
-	7, 4, 5,  // bbl <- fbl <- fbr
-	7, 5, 6,	 // bbl <- fbr <- bbr
+	7, 4, 6, 5,  // bbl <- fbl <- bbr <- fbr
 	// RIGHT
-	5, 1, 2,  // fbr -> ftr -> btr
-	5, 2, 6,	 // fbr -> btr -> bbr
+	5, 1, 6, 2,  // fbr -> ftr -> bbr -> btr
 	// BACK
-	2, 3, 7,	 // btr <- btl <- bbl
-	2, 7, 6,  // btr <- bbl <- bbr
+	2, 3, 6, 7,	 // btr <- btl <- bbr <- bbl
 	// LEFT
-	0, 4, 7,  // ftl <- fbl <- bbl
-	0, 7, 3	 // ftl <- bbl <- btl
+	0, 4, 3, 7 // ftl <- fbl <- btl <- bbl
 };
 
 
@@ -77,6 +68,10 @@ VECTOR translation = {0, 0, 900};
 VECTOR scale = {ONE, ONE, ONE};
 
 MATRIX world = {0};
+
+VECTOR vel = {0, 0, 0};
+VECTOR acc = {0, 0, 0};
+VECTOR pos = {0, 0, 0};
 
 /**
  * Initialize the display mode and setup double buffering
@@ -146,13 +141,24 @@ void Setup(void) {
 
 	// Reset next primitive pointer to the start of the primitive buffer
 	nextprim = primbuff[currbuff];
+
+	acc.vx = 0;
+	acc.vy = 1;
+	acc.vz = 0;
+
+	vel.vx = 0;
+	vel.vy = 0;
+	vel.vz = 0;
+
+	pos.vx = 0;
+	pos.vy = -400;
+	pos.vz = 1800;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Setup function that is called once at the beginning of the execution
 ///////////////////////////////////////////////////////////////////////////////
 void Update(void) {
-	int nclip;
 	long p, flg;
 
 	rotation.vx += 16;
@@ -160,30 +166,51 @@ void Update(void) {
 
 	// Empty the Ordering Table
 	ClearOTagR(ot[currbuff], OT_LENGTH);
+	
+	// Update the position based on acceleration and velocity
+	vel.vx += acc.vx;
+	vel.vy += acc.vy;
+	vel.vz += acc.vz;
 
+	pos.vx += vel.vx >> 1;
+	pos.vy += vel.vy >> 1;
+	pos.vz += vel.vz >> 1;
+
+	if (pos.vy > 400) {
+		vel.vy *= -1;
+	}
+ 
 	RotMatrix(&rotation, &world);
-	TransMatrix(&world, &translation);
+	TransMatrix(&world, &pos);
 	ScaleMatrix(&world, &scale);
 
 	SetRotMatrix(&world);
 	SetTransMatrix(&world);
 
-	for (int i = 0; i < NUM_FACES * 3; i += 3) {
-		polyg3 = (POLY_G3*) nextprim;
-		setPolyG3(polyg3);
-		setRGB0(polyg3, 255, 0, 255);
-
-		setRGB1(polyg3, 255, 255, 0);
-		setRGB2(polyg3, 0, 255, 255);
+	for (int i = 0; i < NUM_FACES * 4; i += 4) {
+		polyg4 = (POLY_G4*) nextprim;
+		setPolyG4(polyg4);
+		setRGB0(polyg4, 255, 0, 255);
+		setRGB1(polyg4, 255, 255, 0);
+		setRGB2(polyg4, 0, 255, 255);
+		setRGB3(polyg4, 0, 255, 0);
+		
+		int f1 = faces[i + 0];
+		int f2 = faces[i + 1];
+		int f3 = faces[i + 2];
+		int f4 = faces[i + 3];	
+		// printf("%d, %d, %d, %d\n", f1, f2, f3, f4);
 
 		long otz = 0;
-		long nclip = RotAverageNclip3(
-			&vertices[faces[i + 0]], 
-			&vertices[faces[i + 1]], 
-			&vertices[faces[i + 2]], 
-			(long*) &polyg3->x0,
-			(long*) &polyg3->x1,
-			(long*) &polyg3->x2,
+		long nclip = RotAverageNclip4(
+			&vertices[f1], 
+			&vertices[f2], 
+			&vertices[f3],
+			&vertices[f4], 
+			(long*) &polyg4->x0,
+			(long*) &polyg4->x1,
+			(long*) &polyg4->x2,
+			(long*) &polyg4->x3,
 			&p, &otz, &flg
 		);
 		
@@ -193,8 +220,8 @@ void Update(void) {
 		}
 
 		if (otz >0 && otz < OT_LENGTH) {
-			addPrim(ot[currbuff][otz], polyg3);
-			nextprim += sizeof(POLY_G3);
+			addPrim(ot[currbuff][otz], polyg4);
+			nextprim += sizeof(POLY_G4);
 		}
 	}
 
