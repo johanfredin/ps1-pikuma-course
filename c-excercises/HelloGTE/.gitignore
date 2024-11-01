@@ -8,3 +8,5 @@ PSX.Dev-README.md
 *.a
 *.vscode
 third_party/psyq
+
+*.iso

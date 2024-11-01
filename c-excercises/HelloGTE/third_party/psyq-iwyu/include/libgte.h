@@ -294,6 +294,8 @@ extern MATRIX *ScaleMatrix(MATRIX *m,VECTOR *v);
 extern MATRIX *ScaleMatrixL(MATRIX *m,VECTOR *v);
 extern MATRIX *TransposeMatrix(MATRIX *m0,MATRIX *m1);
 extern MATRIX *CompMatrix(MATRIX *m0,MATRIX *m1,MATRIX *m2);
+
+// Mulitply matrix m0 with m1 and store result in m2
 extern MATRIX *CompMatrixLV(MATRIX *m0,MATRIX *m1,MATRIX *m2);
 
 extern void MatrixNormal(MATRIX *m, MATRIX *n); 
@@ -363,8 +365,13 @@ extern void ColorCol(VECTOR *v0,CVECTOR *v1,CVECTOR *v2);
 extern long NormalClip(long sxy0,long sxy1,long sxy2);
 extern long AverageZ3(long sz0,long sz1,long sz2);
 extern long AverageZ4(long sz0,long sz1,long sz2,long sz3);
+
+// Returns the cross product of v0 and v1 in v2 in fixed point
 extern void OuterProduct12(VECTOR *v0,VECTOR *v1,VECTOR *v2);
+
+// Returns the cross product of v0 and v1 in v2 in decimal
 extern void OuterProduct0(VECTOR *v0,VECTOR *v1,VECTOR *v2);
+
 extern long Lzc(long data);
 
 
