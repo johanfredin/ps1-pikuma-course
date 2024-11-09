@@ -5,7 +5,9 @@
 		<license file="tools/LICENSEE.DAT"/>
 		<directory_tree>
 			<file name="SYSTEM.CNF"		type="data"	source="tools/SYSTEM.CNF"/>
-			<file name="MAIN.EXE"		type="data"	source="HelloGTE.ps-exe"/>
+			<file name="MAIN.EXE"		type="data"	source="wipefaux.ps-exe"/>
+
+			<file name="MODEL.BIN"		type="data"	source="assets/model.bin"/>
 
 			<!-- Add your own files or folders here -->
 			<dummy sectors="1024"/>

@@ -1,4 +1,5 @@
 #include <libetc.h>
+#include <stdio.h>
 
 #include "globals.h"
 #include "camera.h"
@@ -6,7 +7,13 @@
 #include "joypad.h"
 #include "display.h"
 #include "libcd.h"
+#include "libgte.h"
+#include "malloc.h"
+#include "object.h"
+#include "sys/types.h"
 #include "utils.h"
+
+extern char __heap_start, __sp;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Vertices and face indices
@@ -21,14 +28,6 @@ typedef struct Cube {
 	short faces[24];
 } Cube;
 
-typedef struct Ground {
-	SVECTOR rotation;
-	VECTOR position;
-	VECTOR scale;
-	SVECTOR vertices[4];
-	short faces[6];
-} Ground;
-
 ///////////////////////////////////////////////////////////////////////////////
 // Declarations and global variables
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,50 +39,45 @@ MATRIX worldmat = {0};
 MATRIX viewmat = {0};
 Camera camera;
 
+Object object;
+
 VECTOR UP = {0, -ONE, 0};
+
+// Cube cube = {{0, 0, 0},
+// 			 {0, -400, 1800},
+// 			 {ONE, ONE, ONE},
+// 			 {0, 0, 0},
+// 			 {0, 1, 0},
+// 			 {
+// 				 {-128, -128, -128},
+// 				 {128, -128, -128},
+// 				 {128, -128, 128},
+// 				 {-128, -128, 128},
+// 				 {-128, 128, -128},
+// 				 {128, 128, -128},
+// 				 {128, 128, 128},
+// 				 {-128, 128, 128},
+// 			 },
+// 			 {
+// 				 3, 2, 0, 1, 0, 1, 4, 5, 4, 5, 7, 6, 1, 2, 5, 6, 2, 3, 6, 7, 3, 0, 7, 4,
+// 			 }};
+
 
 Cube cube = {{0, 0, 0},
 			 {0, -400, 1800},
 			 {ONE, ONE, ONE},
 			 {0, 0, 0},
 			 {0, 1, 0},
-			 {
-				 {-128, -128, -128},
-				 {128, -128, -128},
-				 {128, -128, 128},
-				 {-128, -128, 128},
-				 {-128, 128, -128},
-				 {128, 128, -128},
-				 {128, 128, 128},
-				 {-128, 128, 128},
-			 },
-			 {
-				 3, 2, 0, 1, 0, 1, 4, 5, 4, 5, 7, 6, 1, 2, 5, 6, 2, 3, 6, 7, 3, 0, 7, 4,
-			 }};
-
-Ground ground = {{0, 0, 0},
-				 {0, 450, 1800},
-				 {ONE, ONE, ONE},
-				 {
-					 {-900, 0, -900},
-					 {-900, 0, 900},
-					 {900, 0, -900},
-					 {900, 0, 900},
-				 },
-				 {
-					 0,
-					 1,
-					 2,
-					 1,
-					 3,
-					 2,
-				 }};
+			 };
 
 
 ///////////////////////////////////////////////////////////////////////////////
 // Setup function that is called once at the beginning of the execution
 ///////////////////////////////////////////////////////////////////////////////
 void Setup(void) {
+	// Initialize the heap
+	InitHeap3((unsigned long *) &__heap_start, (&__sp - 0x5000) - &__heap_start);
+
 	// Setup the display environment
 	ScreenInit();
 
@@ -100,6 +94,35 @@ void Setup(void) {
 	camera.position.vy = -1000;
 	camera.position.vz = -1500;
 	camera.lookat = (MATRIX){0};
+
+	u_long lenght;
+	char *bytes = FileRead("\\MODEL.BIN;1",  &lenght);
+
+	u_long b = 0; // counter of bytes
+	object.numverts = GetShortBE(bytes, &b);
+	object.vertices = calloc3(object.numverts, sizeof(SVECTOR));
+	for (int i = 0; i < object.numverts; i++) {
+		object.vertices[i].vx = GetShortBE(bytes, &b);
+		object.vertices[i].vy = GetShortBE(bytes, &b);
+		object.vertices[i].vz = GetShortBE(bytes, &b);
+		printf("VERTEX %d x:%d, y:%d, z:%d\n", i, object.vertices[i].vx, object.vertices[i].vy, object.vertices[i].vz);
+	}
+	object.numfaces = GetShortBE(bytes, &b) * 4; // 4 indices per face;
+	object.faces = calloc3(object.numfaces, sizeof(short));
+	for(int i = 0; i < object.numfaces; i++) {
+		object.faces[i] = GetShortBE(bytes, &b);
+		printf("Face: %d\n", object.faces[i]);
+	}
+	object.numcolors = GetByteBE(bytes, &b);
+	printf("Num colors: %d\n", object.numcolors);
+	object.colors = calloc3(object.numcolors, sizeof(CVECTOR));
+	for (int i = 0; i < object.numcolors; i++) {
+		object.colors[i].r = (u_char) GetByteBE(bytes, &b);
+		object.colors[i].g = (u_char) GetByteBE(bytes, &b);
+		object.colors[i].b = (u_char) GetByteBE(bytes, &b); 
+		object.colors[i].cd = (u_char) GetByteBE(bytes, &b);
+		printf("COLOR %d, r:%d, g:%d, b:%d\n", i, object.colors[i].r, object.colors[i].g, object.colors[i].b);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,23 +156,8 @@ void Update(void) {
 		camera.position.vz -= 50;
 	}
 
-	// Update the cube velocity based on its acceleration
-	cube.vel.vx += cube.acc.vx;
-	cube.vel.vy += cube.acc.vy;
-	cube.vel.vz += cube.acc.vz;
-
-	// Update the cube position based on its velocity
-	cube.position.vx += (cube.vel.vx) >> 1;
-	cube.position.vy += (cube.vel.vy) >> 1;
-	cube.position.vz += (cube.vel.vz) >> 1;
-
-	// Check "collision" with the ground
-	if (cube.position.vy + 150 > ground.position.vy) {
-		cube.vel.vy *= -1;
-	}
-
 	// Compute the lookat matrix for this frame
-	CameraLookAt(&camera, &cube.position, &UP);
+	// CameraLookAt(&camera, &cube.position, &UP);
 
 	//---------------
 	// Draw the Cube 
@@ -160,15 +168,16 @@ void Update(void) {
 	TransMatrix(&worldmat, &cube.position);
 	ScaleMatrix(&worldmat, &cube.scale);
 
-	// Create the view matrix combining the world matrix and the lookat matrix
+	// // Create the view matrix combining the world matrix and the lookat matrix
 	CompMatrixLV(&camera.lookat, &worldmat, &viewmat);
 
 	SetRotMatrix(&viewmat);
 	SetTransMatrix(&viewmat);
 
 	// Loop all face indices of our cube faces
-	for (i = 0; i < 24; i += 4) {
+	for (i = 0; i < object.numfaces * 4; i += 4) {
 		polyg4 = (POLY_G4 *)GetNextPrim();
+		CVECTOR color = object.colors[i];
 		setPolyG4(polyg4);
 		setRGB0(polyg4, 255, 0, 255);
 		setRGB1(polyg4, 255, 255, 0);
@@ -213,52 +222,6 @@ void Update(void) {
 		}
 	}
 
-	//--------------------------
-	// Draw the Floor Triangles
-	//--------------------------
-
-	// Apply rotation, translation and scaling of the ground in the world space
-	RotMatrix(&ground.rotation, &worldmat);
-	TransMatrix(&worldmat, &ground.position);
-	ScaleMatrix(&worldmat, &ground.scale);
-
-	// Create the view matrix combining the world matrix and the lookat matrix
-	CompMatrixLV(&camera.lookat, &worldmat, &viewmat);
-	SetRotMatrix(&viewmat);
-	SetTransMatrix(&viewmat);
-
-	for (i = 0; i < 6; i += 3) {
-		polyf3 = (POLY_F3 *) GetNextPrim();
-		setPolyF3(polyf3);
-		setRGB0(polyf3, 255, 255, 0);
-
-		// Load vertices
-		gte_ldv0(&ground.vertices[ground.faces[i + 0]]);
-		gte_ldv1(&ground.vertices[ground.faces[i + 1]]);
-		gte_ldv2(&ground.vertices[ground.faces[i + 2]]);
-
-		// Perform rotation, translation and projection
-		gte_rtpt();
-
-		// Perform normal clipping and store result in nclip
-		gte_nclip();
-		gte_stotz(&nclip);
-
-		if (nclip >= 0) {
-			// Store transformed vertices into poly position
-			gte_stsxy3(&polyf3->x0, &polyf3->x1, &polyf3->x2);
-
-			// Calculate otz index and store in otz
-			gte_avsz3();
-			gte_stotz(&otz);
-
-			// Sort the triangle in the OT if within limit
-			if ((otz > 0) && (otz < OT_LENGTH)) {
-				addPrim(GetOTAt(GetCurrentBuff(), otz), polyf3);
-				IncrementNextPrim(sizeof(POLY_F3));
-			}
-		}
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

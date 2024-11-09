@@ -2,18 +2,16 @@
 
 all:
 	mkpsxiso -y isoconfig.xml
-	rm -f HelloGTE HelloGTE.bin
+	rm -f wipefaux wipefaux.bin
 	rm -f *.map
-	rm -f *.elf
 	rm -f *.o 
 	rm -f *.dep
-	rm -f *.ps-exe
 
 cleansub:
 	$(MAKE) clean
-	rm -f HelloGTE.cue HelloGTE.bin
+	rm -f wipefaux.cue wipefaux.bin
 
-TARGET = HelloGTE
+TARGET = wipefaux
 TYPE = ps-exe
 
 SRCS = \

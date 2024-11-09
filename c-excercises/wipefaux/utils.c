@@ -3,6 +3,7 @@
 #include <libcd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "sys/types.h"
 
 #define SECTOR 2048
 
@@ -23,5 +24,26 @@ char *FileRead(char *filename, u_long *lenght) {
     CdReadSync(0, 0);                                             // Wait until the read is complete
     
     *lenght = filepos.size;                                                     // Return a param with how many bytes we read from the file   
+    printf("File read=%s, size=%lu bytes\n", filename, *lenght);
     return buffer;
+}
+
+short GetShortLE(char *bytes, u_long *i) {
+    unsigned short value = 0;
+    value |= bytes[(*i)++] << 0;
+    value |= bytes[(*i)++] << 8;
+    return (short) value;
+}
+
+short GetShortBE(char *bytes, u_long *i) {
+    unsigned short value = 0;
+    value |= bytes[(*i)++] << 8;
+    value |= bytes[(*i)++] << 0;
+    return (short) value;
+}
+
+char GetByteBE(char *bytes, u_long * i) {
+    unsigned char value = 0;
+    value = bytes[(*i)++];
+    return (char) value;
 }
