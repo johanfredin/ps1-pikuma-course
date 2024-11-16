@@ -8,7 +8,7 @@
 			<file name="MAIN.EXE"		type="data"	source="../wipefaux.ps-exe"/>
 
 			<file name="ALLSH.PRM"		type="data"	source="../assets/common/ALLSH.PRM"/>
-			<!-- <file name="ALLSH.CMP"		type="data"	source="assets/common/ALLSH.CMP"/> -->
+			<file name="ALLSH.CMP"		type="data"	source="../assets/common/ALLSH.CMP"/>
 
 			<!-- Add your own files or folders here -->
 			<dummy sectors="1024"/>

@@ -7,6 +7,8 @@
 #include "display.h"
 #include "globals.h"
 #include "inline_n.h"
+#include "malloc.h"
+#include "texture.h"
 #include "utils.h"
 
 static inline void PadSkip(u_long *i, u_short skip) {
@@ -16,6 +18,8 @@ static inline void PadSkip(u_long *i, u_short skip) {
 void LoadObjectPRM(Object *object, char *filename) {
 	u_long length;
 	u_char *bytes = (u_char *)FileRead(filename, &length);
+	Texture *texture = NULL;
+	u_short uoffset, voffset;
 
 	if (bytes == NULL) {
 		printf("Error reading %s from the CD.\n", filename);
@@ -112,6 +116,21 @@ void LoadObjectPRM(Object *object, char *filename) {
 				prm->v2 = GetChar(bytes, &b);
 				prm->pad1 = GetShortBE(bytes, &b);
 				prm->color = (CVECTOR){GetChar(bytes, &b), GetChar(bytes, &b), GetChar(bytes, &b), GetChar(bytes, &b)};
+
+				texture = GetFromTextureStore(prm->tpage);
+				uoffset = texture->u0;
+				voffset = texture->v0;
+
+				prm->u0 += uoffset;
+				prm->v0 += voffset;
+				prm->u1 += uoffset;
+				prm->v1 += voffset;
+				prm->u2 += uoffset;
+				prm->v2 += voffset;
+
+				prm->tpage = texture->tpage;
+				prm->clut = texture->clut;
+
 				break;
 			}
 			case TypeF4: {
@@ -148,6 +167,23 @@ void LoadObjectPRM(Object *object, char *filename) {
 				prm->v3 = GetChar(bytes, &b);
 				prm->pad1 = GetShortBE(bytes, &b);
 				prm->color = (CVECTOR){GetChar(bytes, &b), GetChar(bytes, &b), GetChar(bytes, &b), GetChar(bytes, &b)};
+
+				texture = GetFromTextureStore(prm->tpage);
+				uoffset = texture->u0;
+				voffset = texture->v0;
+
+				prm->u0 += uoffset;
+				prm->v0 += voffset;
+				prm->u1 += uoffset;
+				prm->v1 += voffset;
+				prm->u2 += uoffset;
+				prm->v2 += voffset;
+				prm->u3 += uoffset;
+				prm->v3 += voffset;
+
+				prm->tpage = texture->tpage;
+				prm->clut = texture->clut;
+
 				break;
 			}
 			case TypeG3: {
@@ -191,6 +227,21 @@ void LoadObjectPRM(Object *object, char *filename) {
 										  GetChar(bytes, &b), GetChar(bytes, &b)};
 				prm->color[2] = (CVECTOR){GetChar(bytes, &b), GetChar(bytes, &b),
 										  GetChar(bytes, &b), GetChar(bytes, &b)};
+
+
+				texture = GetFromTextureStore(prm->tpage);
+				uoffset = texture->u0;
+				voffset = texture->v0;
+
+				prm->u0 += uoffset;
+				prm->v0 += voffset;
+				prm->u1 += uoffset;
+				prm->v1 += voffset;
+				prm->u2 += uoffset;
+				prm->v2 += voffset;
+				
+				prm->tpage = texture->tpage;
+				prm->clut = texture->clut;
 				break;
 			}
 			case TypeG4: {
@@ -241,7 +292,24 @@ void LoadObjectPRM(Object *object, char *filename) {
 										  GetChar(bytes, &b), GetChar(bytes, &b)};
 				prm->color[3] = (CVECTOR){GetChar(bytes, &b), GetChar(bytes, &b),
 										  GetChar(bytes, &b), GetChar(bytes, &b)};
-				break;
+
+
+				texture = GetFromTextureStore(prm->tpage);
+				uoffset = texture->u0;
+				voffset = texture->v0;
+
+				prm->u0 += uoffset;
+				prm->v0 += voffset;
+				prm->u1 += uoffset;
+				prm->v1 += voffset;
+				prm->u2 += uoffset;
+				prm->v2 += voffset;
+				prm->u3 += uoffset;
+				prm->v3 += voffset;
+
+				prm->tpage = texture->tpage;
+				prm->clut = texture->clut;				
+				break;	
 			}
 			case TypeTSPR:
 			case TypeBSPR: {
@@ -322,6 +390,9 @@ void LoadObjectPRM(Object *object, char *filename) {
 	object->position = (VECTOR){object->origin.vx, object->origin.vy, object->origin.vz};
 	object->scale = (VECTOR){ONE, ONE, ONE};
 	object->rotation = (SVECTOR){0, 0, 0};
+
+	// Free the bytes
+	free3(bytes);
 }
 
 void RenderObject(Object *object, Camera *camera) {
