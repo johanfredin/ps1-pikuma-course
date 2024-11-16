@@ -414,14 +414,9 @@ void RenderObject(Object *object, Camera *camera) {
 	// Loop all object primitives
 	for (int i = 0; i < object->numprimitives; i++) {
 		switch (object->primitives[i].type) {
-			case TypeF3:
-			case TypeFT3:
-			case TypeG3:
-			case TypeGT3: {
-				POLY_F3 *poly;
-				F3 *prm;
-				prm = (F3 *)object->primitives[i].primitive;
-				poly = (POLY_F3 *)GetNextPrim();
+			case TypeF3: {
+				F3 *prm = (F3 *)object->primitives[i].primitive;
+				POLY_F3 *poly = (POLY_F3 *)GetNextPrim();
 				gte_ldv0(&object->vertices[prm->coords[0]]);
 				gte_ldv1(&object->vertices[prm->coords[1]]);
 				gte_ldv2(&object->vertices[prm->coords[2]]);
@@ -435,23 +430,99 @@ void RenderObject(Object *object, Camera *camera) {
 				gte_avsz3();
 				gte_stotz(&otz);
 				if (otz > 0 && otz < OT_LENGTH) {
-					SetPolyF3(poly);
-					poly->r0 = 255;	 // prm->color.r;
-					poly->g0 = 255;	 // prm->color.g;
-					poly->b0 = 0;	 // prm->color.b;
+					setPolyF3(poly);
+					setRGB0(poly, prm->color.r, prm->color.g, prm->color.b);
 					addPrim(GetOTAt(GetCurrentBuff(), otz), poly);
 					IncrementNextPrim(sizeof(POLY_F3));
 				}
 				break;
 			}
-			case TypeF4:
-			case TypeFT4:
-			case TypeG4:
-			case TypeGT4: {
-				POLY_F4 *poly;
-				F4 *prm;
-				prm = (F4 *)object->primitives[i].primitive;
-				poly = (POLY_F4 *)GetNextPrim();
+			case TypeG3: {
+				G3 *prm = (G3 *)object->primitives[i].primitive;
+				POLY_G3 *poly = (POLY_G3 *)GetNextPrim();
+				gte_ldv0(&object->vertices[prm->coords[0]]);
+				gte_ldv1(&object->vertices[prm->coords[1]]);
+				gte_ldv2(&object->vertices[prm->coords[2]]);
+				gte_rtpt();
+				gte_nclip();
+				gte_stopz(&nclip);
+				if (nclip < 0) {
+					continue;
+				}
+				gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
+				gte_avsz3();
+				gte_stotz(&otz);
+				if (otz > 0 && otz < OT_LENGTH) {
+					setPolyG3(poly);
+					setRGB0(poly, prm->color[0].r, prm->color[0].g, prm->color[0].b);
+					setRGB1(poly, prm->color[1].r, prm->color[1].g, prm->color[1].b);
+					setRGB2(poly, prm->color[2].r, prm->color[2].g, prm->color[2].b);
+					addPrim(GetOTAt(GetCurrentBuff(), otz), poly);
+					IncrementNextPrim(sizeof(POLY_G3));
+				}
+				break;
+			} 
+			case TypeFT3: {
+				FT3 *prm = (FT3 *)object->primitives[i].primitive;
+				POLY_FT3 *poly = (POLY_FT3 *)GetNextPrim();
+				gte_ldv0(&object->vertices[prm->coords[0]]);
+				gte_ldv1(&object->vertices[prm->coords[1]]);
+				gte_ldv2(&object->vertices[prm->coords[2]]);
+				gte_rtpt();
+				gte_nclip();
+				gte_stopz(&nclip);
+				if (nclip < 0) {
+					continue;
+				}
+				gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
+				gte_avsz3();
+				gte_stotz(&otz);
+				if (otz > 0 && otz < OT_LENGTH) {
+					setPolyFT3(poly);
+					setRGB0(poly, prm->color.r, prm->color.g, prm->color.b);
+
+					poly->tpage = prm->tpage;
+					poly->clut = prm->clut;
+					setUV3(poly, prm->u0, prm->v0, prm->u1, prm->v1, prm->u2, prm->v2);
+
+					addPrim(GetOTAt(GetCurrentBuff(), otz), poly);
+					IncrementNextPrim(sizeof(POLY_FT3));
+				}
+				break;
+			}
+			case TypeGT3: {
+				GT3 *prm = (GT3 *) object->primitives[i].primitive;
+				POLY_GT3 *poly = (POLY_GT3 *)GetNextPrim();
+				gte_ldv0(&object->vertices[prm->coords[0]]);
+				gte_ldv1(&object->vertices[prm->coords[1]]);
+				gte_ldv2(&object->vertices[prm->coords[2]]);
+				gte_rtpt();
+				gte_nclip();
+				gte_stopz(&nclip);
+				if (nclip < 0) {
+					continue;
+				}
+				gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
+				gte_avsz3();
+				gte_stotz(&otz);
+				if (otz > 0 && otz < OT_LENGTH) {
+					setPolyGT3(poly);
+					setRGB0(poly, prm->color[0].r, prm->color[0].g, prm->color[0].b);
+					setRGB1(poly, prm->color[1].r, prm->color[1].g, prm->color[1].b);
+					setRGB2(poly, prm->color[2].r, prm->color[2].g, prm->color[2].b);
+
+					poly->tpage = prm->tpage;
+					poly->clut = prm->clut;
+					setUV3(poly, prm->u0, prm->v0, prm->u1, prm->v1, prm->u2, prm->v2);
+					
+					addPrim(GetOTAt(GetCurrentBuff(), otz), poly);
+					IncrementNextPrim(sizeof(POLY_GT3));
+				}
+				break;
+			}
+			case TypeF4: {
+				F4 *prm = (F4 *)object->primitives[i].primitive;
+				POLY_F4 *poly = (POLY_F4 *)GetNextPrim();
 				gte_ldv0(&object->vertices[prm->coords[0]]);
 				gte_ldv1(&object->vertices[prm->coords[1]]);
 				gte_ldv2(&object->vertices[prm->coords[2]]);
@@ -468,12 +539,105 @@ void RenderObject(Object *object, Camera *camera) {
 				gte_avsz4();
 				gte_stotz(&otz);
 				if (otz > 0 && otz < OT_LENGTH) {
-					SetPolyF4(poly);
-					poly->r0 = 255;	 // prm->color.r;
-					poly->g0 = 0;	 // prm->color.g;
-					poly->b0 = 255;	 // prm->color.b;
+					setPolyF4(poly);
+					setRGB0(poly, prm->color.r, prm->color.g, prm->color.b);
 					addPrim(GetOTAt(GetCurrentBuff(), otz), poly);
 					IncrementNextPrim(sizeof(POLY_F4));
+				}
+				break;
+			}
+			case TypeFT4: {
+				FT4 *prm = (FT4 *)object->primitives[i].primitive;
+				POLY_FT4 *poly = (POLY_FT4 *)GetNextPrim();
+				gte_ldv0(&object->vertices[prm->coords[0]]);
+				gte_ldv1(&object->vertices[prm->coords[1]]);
+				gte_ldv2(&object->vertices[prm->coords[2]]);
+				gte_rtpt();
+				gte_nclip();
+				gte_stopz(&nclip);
+				if (nclip < 0) {
+					continue;
+				}
+				gte_stsxy0(&poly->x0);
+				gte_ldv0(&object->vertices[prm->coords[3]]);
+				gte_rtps();
+				gte_stsxy3(&poly->x1, &poly->x2, &poly->x3);
+				gte_avsz4();
+				gte_stotz(&otz);
+				if (otz > 0 && otz < OT_LENGTH) {
+					setPolyFT4(poly);
+					setRGB0(poly, prm->color.r, prm->color.g, prm->color.b);
+
+					poly->tpage = prm->tpage;
+					poly->clut = prm->clut;
+					setUV4(poly, prm->u0, prm->v0, prm->u1, prm->v1, prm->u2, prm->v2, prm->u3, prm->v3);
+
+					addPrim(GetOTAt(GetCurrentBuff(), otz), poly);
+					IncrementNextPrim(sizeof(POLY_FT4));
+				}
+				break;
+			}
+			case TypeG4: {
+				G4 *prm = (G4 *)object->primitives[i].primitive;
+				POLY_G4 *poly = (POLY_G4 *)GetNextPrim();
+				gte_ldv0(&object->vertices[prm->coords[0]]);
+				gte_ldv1(&object->vertices[prm->coords[1]]);
+				gte_ldv2(&object->vertices[prm->coords[2]]);
+				gte_rtpt();
+				gte_nclip();
+				gte_stopz(&nclip);
+				if (nclip < 0) {
+					continue;
+				}
+				gte_stsxy0(&poly->x0);
+				gte_ldv0(&object->vertices[prm->coords[3]]);
+				gte_rtps();
+				gte_stsxy3(&poly->x1, &poly->x2, &poly->x3);
+				gte_avsz4();
+				gte_stotz(&otz);
+				if (otz > 0 && otz < OT_LENGTH) {
+					setPolyG4(poly);
+					setRGB0(poly, prm->color[0].r, prm->color[0].g, prm->color[0].b);
+					setRGB1(poly, prm->color[1].r, prm->color[1].g, prm->color[1].b);
+					setRGB2(poly, prm->color[2].r, prm->color[2].g, prm->color[2].b);
+					setRGB2(poly, prm->color[3].r, prm->color[3].g, prm->color[3].b);
+
+					addPrim(GetOTAt(GetCurrentBuff(), otz), poly);
+					IncrementNextPrim(sizeof(POLY_G4));
+				}
+				break;
+			}
+			case TypeGT4: {
+				GT4 *prm = (GT4 *)object->primitives[i].primitive;
+				POLY_GT4 *poly = (POLY_GT4 *)GetNextPrim();
+				gte_ldv0(&object->vertices[prm->coords[0]]);
+				gte_ldv1(&object->vertices[prm->coords[1]]);
+				gte_ldv2(&object->vertices[prm->coords[2]]);
+				gte_rtpt();
+				gte_nclip();
+				gte_stopz(&nclip);
+				if (nclip < 0) {
+					continue;
+				}
+				gte_stsxy0(&poly->x0);
+				gte_ldv0(&object->vertices[prm->coords[3]]);
+				gte_rtps();
+				gte_stsxy3(&poly->x1, &poly->x2, &poly->x3);
+				gte_avsz4();
+				gte_stotz(&otz);
+				if (otz > 0 && otz < OT_LENGTH) {
+					setPolyGT4(poly);
+					setRGB0(poly, prm->color[0].r, prm->color[0].g, prm->color[0].b);
+					setRGB1(poly, prm->color[1].r, prm->color[1].g, prm->color[1].b);
+					setRGB2(poly, prm->color[2].r, prm->color[2].g, prm->color[2].b);
+					setRGB2(poly, prm->color[3].r, prm->color[3].g, prm->color[3].b);
+
+					poly->tpage = prm->tpage;
+					poly->clut = prm->clut;
+					setUV4(poly, prm->u0, prm->v0, prm->u1, prm->v1, prm->u2, prm->v2, prm->u3, prm->v3);
+
+					addPrim(GetOTAt(GetCurrentBuff(), otz), poly);
+					IncrementNextPrim(sizeof(POLY_GT4));
 				}
 				break;
 			}

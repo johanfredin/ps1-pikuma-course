@@ -28,7 +28,7 @@ static void Setup(void) {
 	camera.lookat = (MATRIX){0};
 
 	LoadTexture("\\ALLSH.CMP;1");	
-	// LoadObjectPRM(&object, "\\ALLSH.PRM;1");
+	LoadObjectPRM(&object, "\\ALLSH.PRM;1");
 	
 }
 

@@ -67,6 +67,7 @@ void LoadTexture(char *filename) {
 	for (int i = 0; i < numtextures; i++) {
 		Texture *texture = UploadTextureToVRAM(timoffsets[i]);
         if(!texture) {
+			printf("Texture was null!\n");
             continue;
         }
         if(texturecount > MAX_TEXTURES) {
@@ -114,11 +115,13 @@ Texture *UploadTextureToVRAM(long timpointer) {
             texture->clut = CLUT(texture->clutX >> 4, texture->clutY);
 
             // Load the CLUT rectangle to VRAM
-            LoadImage(&(RECT){tc4->clutX, tc4->clutY, tc4->clutW, tc4->clutH}, (u_long *)(&tc4->clut));
+			RECT clutRect = {tc4->clutX, tc4->clutY, tc4->clutW, tc4->clutH};
+            LoadImage(&clutRect, (u_long *)(&tc4->clut));
             DrawSync(0);
 
             // Load the texture rectangle to VRAM
-            LoadImage(&(RECT){tc4->textureX, tc4->textureY, tc4->textureW, tc4->textureH}, (u_long *)(&tc4 + 1));
+			RECT texRect = {tc4->textureX, tc4->textureY, tc4->textureW, tc4->textureH};
+            LoadImage(&texRect, (u_long *)(&tc4 + 1));
             DrawSync(0);
 			break;
 		}
@@ -150,11 +153,13 @@ Texture *UploadTextureToVRAM(long timpointer) {
             texture->clut = CLUT(texture->clutX >> 4, texture->clutY);
 
             // Load the CLUT rectangle to VRAM
-            LoadImage(&(RECT){tc8->clutX, tc8->clutY, tc8->clutW, tc8->clutH}, (u_long *)(&tc8->clut));
+			RECT clutRect = {tc8->clutX, tc8->clutY, tc8->clutW, tc8->clutH};
+            LoadImage(&clutRect, (u_long *)(&tc8->clut));
             DrawSync(0);
 
             // Load the texture rectangle to VRAM
-            LoadImage(&(RECT){tc8->textureX, tc8->textureY, tc8->textureW, tc8->textureH}, (u_long *)(&tc8 + 1));
+			RECT texRect = {tc8->textureX, tc8->textureY, tc8->textureW, tc8->textureH};
+            LoadImage(&texRect, (u_long *)(&tc8 + 1));
             DrawSync(0);
 			break;
 		}
