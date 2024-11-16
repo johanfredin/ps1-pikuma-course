@@ -31,7 +31,8 @@ extern void *realloc2(void *, size_t);
 extern void InitHeap3(unsigned long *, unsigned long);
 extern void free3(void *);
 extern void *malloc3(size_t);
-extern void *calloc3(size_t, size_t);
+// n = amount of entries, s=size of the entries
+extern void *calloc3(size_t n, size_t s);
 extern void *realloc3(void *, size_t);
 #if defined(_LANGUAGE_C_PLUS_PLUS)||defined(__cplusplus)||defined(c_plusplus)
 }

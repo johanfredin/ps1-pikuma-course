@@ -1,5 +1,4 @@
 #include "globals.h"
-
 #include <libgpu.h>
 
 static u_long ot[2][OT_LENGTH];             // Ordering table holding pointers to sorted primitives

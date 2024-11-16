@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<iso_project image_name="target/GAME.iso" no_xa="1">
+	<track type="data">
+		<license file="LICENSEE.DAT"/>
+		<directory_tree>
+			<file name="SYSTEM.CNF"		type="data"	source="SYSTEM.CNF"/>
+			<file name="MAIN.EXE"		type="data"	source="../wipefaux.ps-exe"/>
+
+			<file name="ALLSH.PRM"		type="data"	source="../assets/common/ALLSH.PRM"/>
+			<!-- <file name="ALLSH.CMP"		type="data"	source="assets/common/ALLSH.CMP"/> -->
+
+			<!-- Add your own files or folders here -->
+			<dummy sectors="1024"/>
+			
+		</directory_tree>
+	</track>
+</iso_project>

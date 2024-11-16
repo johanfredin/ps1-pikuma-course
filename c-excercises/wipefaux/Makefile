@@ -1,7 +1,7 @@
 .PHONY: all cleansub
 
 all:
-	mkpsxiso -y isoconfig.xml
+	mkpsxiso -y ./tools/isoconfig.xml
 	rm -f wipefaux wipefaux.bin
 	rm -f *.map
 	rm -f *.o 
@@ -9,14 +9,16 @@ all:
 
 cleansub:
 	$(MAKE) clean
-	rm -f wipefaux.cue wipefaux.bin
+	rm -f wipefaux.cue 
+	rm -f wipefaux.bin 
+	rm -f GAME.iso 
 
 TARGET = wipefaux
 TYPE = ps-exe
 
 SRCS = \
 third_party/nugget/common/crt0/crt0.s \
-main.c display.c globals.c joypad.c camera.c utils.c
+main.c display.c globals.c joypad.c camera.c utils.c, object.c
 
 CPPFLAGS += -Ithird_party/psyq-iwyu/include
 LDFLAGS += -Lthird_party/psyq/lib
