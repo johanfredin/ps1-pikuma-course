@@ -5,3 +5,6 @@ armips/
 *.AppImage
 *.c.swp
 *.vscode
+*.pdf
+psyq-docs
+*.AppImage
