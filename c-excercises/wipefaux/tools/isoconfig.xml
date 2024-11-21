@@ -10,6 +10,9 @@
 			<file name="ALLSH.PRM"		type="data"	source="../assets/common/ALLSH.PRM"/>
 			<file name="ALLSH.CMP"		type="data"	source="../assets/common/ALLSH.CMP"/>
 
+			<file name="RESCU.PRM"		type="data"	source="../assets/common/RESCU.PRM"/>
+			<file name="RESCU.CMP"		type="data"	source="../assets/common/RESCU.CMP"/>
+
 			<!-- Add your own files or folders here -->
 			<dummy sectors="1024"/>
 			

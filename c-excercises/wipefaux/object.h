@@ -1,56 +1,49 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <libgte.h>
 #include <sys/types.h>
 #include "camera.h"
 
-/* Primitive Flags */
-#define  SingleSided    0x0001
-#define  ShipEngine     0x0002
-#define  Translucent    0x0004
+#define TYPE_F3                1
+#define TYPE_FT3               2
+#define TYPE_F4                3
+#define TYPE_FT4               4
+#define TYPE_G3                5
+#define TYPE_GT3               6
+#define TYPE_G4                7
+#define TYPE_GT4               8
+#define TYPE_LF2               9
+#define TYPE_TSPR             10
+#define TYPE_BSPR             11
+#define TYPE_LSF3             12
+#define TYPE_LSFT3            13
+#define TYPE_LSF4             14
+#define TYPE_LSFT4            15
+#define TYPE_LSG3             16
+#define TYPE_LSGT3            17
+#define TYPE_LSG4             18
+#define TYPE_LSGT4            19
+#define TYPE_SPLINE           20
+#define TYPE_INFINITELIGHT    21
+#define TYPE_POINTLIGHT       22
+#define TYPE_SPOTLIGHT        23
 
-/* Primitive Types */
-#define     TypeF3               1
-#define     TypeFT3              2
-#define     TypeF4               3
-#define     TypeFT4              4
-#define     TypeG3               5
-#define     TypeGT3              6
-#define     TypeG4               7
-#define     TypeGT4              8
-
-#define     TypeLF2              9
-#define     TypeTSPR             10
-#define     TypeBSPR             11
-
-#define     TypeLSF3             12
-#define     TypeLSFT3            13
-#define     TypeLSF4             14
-#define     TypeLSFT4            15
-#define     TypeLSG3             16
-#define     TypeLSGT3            17
-#define     TypeLSG4             18
-#define     TypeLSGT4            19
-
-#define     TypeSpline           20
-
-#define     TypeInfiniteLight    21
-#define     TypePointLight       22
-#define     TypeSpotLight        23
+#define FLAG_SINGLE_SIDED 0x0001
+#define FLAG_SHIP_ENGINE  0x0002
+#define FLAG_TRANSLUCENT  0x0004
 
 typedef struct F3 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[3];     /* Indices of the coords */
+   short             coords[3];
    short             pad1;
    CVECTOR           color;
 } F3;
 
 typedef struct FT3 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[3];     /* Indices of the coords */
+   short             coords[3];
    short             texture;
    short             clut;
    short             tpage;
@@ -65,16 +58,16 @@ typedef struct FT3 {
 } FT3;
 
 typedef struct F4 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[4];     /* Indices of the coords */
+   short             coords[4];
    CVECTOR           color;
 } F4;
 
 typedef struct FT4 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[4];     /* Indices of the coords */
+   short             coords[4];
    short             texture;
    short             clut;
    short             tpage;
@@ -91,17 +84,17 @@ typedef struct FT4 {
 } FT4;
 
 typedef struct G3 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[3];     /* Indices of the coords */
+   short             coords[3];
    short             pad1;
    CVECTOR           color[3];
 } G3;
 
 typedef struct GT3 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[3];     /* Indices of the coords */
+   short             coords[3];
    short             texture;
    short             clut;
    short             tpage;
@@ -116,16 +109,16 @@ typedef struct GT3 {
 } GT3;
 
 typedef struct G4 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[4];     /* Indices of the coords */
+   short             coords[4];
    CVECTOR           color[4];
 } G4;
 
 typedef struct GT4 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[4];     /* Indices of the coords */
+   short             coords[4];
    short             texture;
    short             clut;
    short             tpage;
@@ -142,18 +135,18 @@ typedef struct GT4 {
 } GT4;
 
 typedef struct LSF3 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[3];     /* Indices of the coords */
-   short             normal;        /* Indices of the normals */
+   short             coords[3];
+   short             normal;
    CVECTOR           color;
 } LSF3;
 
 typedef struct LSFT3 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[3];     /* Indices of the coords */
-   short             normal;        /* Indices of the normals */
+   short             coords[3];
+   short             normal;
    short             texture;
    short             clut;
    short             tpage;
@@ -167,19 +160,19 @@ typedef struct LSFT3 {
 } LSFT3;
 
 typedef struct LSF4 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[4];     /* Indices of the coords */
-   short             normal;        /* Indices of the normals */
+   short             coords[4];
+   short             normal;
    short             pad1;
    CVECTOR           color;
 } LSF4;
 
 typedef struct LSFT4 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[4];     /* Indices of the coords */
-   short             normal;        /* Indices of the normals */
+   short             coords[4];
+   short             normal;
    short             texture;
    short             clut;
    short             tpage;
@@ -195,18 +188,18 @@ typedef struct LSFT4 {
 } LSFT4;
 
 typedef struct LSG3 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[3];     /* Indices of the coords */
-   short             normals[3];    /* Indices of the normals */
+   short             coords[3];
+   short             normals[3];
    CVECTOR           color[3];
 } LSG3;
 
 typedef struct LSGT3 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[3];     /* Indices of the coords */
-   short             normals[3];    /* Indices of the normals */
+   short             coords[3];
+   short             normals[3];
    short             texture;
    short             clut;
    short             tpage;
@@ -220,18 +213,18 @@ typedef struct LSGT3 {
 } LSGT3;
 
 typedef struct LSG4 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[4];     /* Indices of the coords */
-   short             normals[4];    /* Indices of the normals */
+   short             coords[4];
+   short             normals[4];
    CVECTOR           color[4];
 } LSG4;
 
 typedef struct LSGT4 {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
-   short             coords[4];     /* Indices of the coords */
-   short             normals[4];    /* Indices of the normals */
+   short             coords[4];
+   short             normals[4];
    short             texture;
    short             clut;
    short             tpage;
@@ -247,20 +240,6 @@ typedef struct LSGT4 {
    CVECTOR           color[4];
 } LSGT4;
 
-typedef struct {
-   u_long*   tag;
-   CVECTOR  color0;
-   DVECTOR  xy0;
-   DVECTOR  xy1;
-} LineF2;
-
-typedef struct LF2 {
-   short             type;          /* Type of primitive */
-   short             flag;
-   short             lines;         /* Number of lines */
-   LineF2*           line[2];       /* 2 GPU Primitive arrays for double buffer */
-} LF2;
-
 typedef struct SPR {
    short             type;
    short             flag;
@@ -272,7 +251,7 @@ typedef struct SPR {
 } SPR;
 
 typedef struct Spline {
-   short             type;          /* Type of primitive */
+   short             type;
    short             flag;
    SVECTOR           control1;
    SVECTOR           position;
@@ -308,8 +287,6 @@ typedef struct InfiniteLight {
    CVECTOR           color;
 } InfiniteLight;
 
-
-/* Primitive Union (since we want to only hold one of it per list node) */
 typedef union Prm {
   F3             *f3;
   FT3            *ft3;
@@ -340,22 +317,21 @@ typedef struct PrimitiveNode {
   Prm *primitive;
 } PrimitiveNode;
 
-/* Object declaration */
 typedef struct Object {
-  char          name[16];         /* Model name (16 characters/bytes) */
+  char          name[16];         /* Model name */
 
   short         flags;            /* Flags dictating how the object should be displayed */
 
   VECTOR        origin;           /* Origin position (x, y, z) */
 
   short         numvertices;      /* Number of vertices */
-  SVECTOR       *vertices;        /* Pointer to 3D vertices (buffer) */
+  SVECTOR       *vertices;        /* Pointer to 3D vertices */
 
   short         numnormals;       /* Number of normals */
   SVECTOR       *normals;          /* Pointer to 3D normals */
 
-  short         numprimitives;    /* Number of Primitives */
-  PrimitiveNode *primitives;      /* Pointer to Z Sort Primitives */
+  short         numprimitives;    /* Number of primitives */
+  PrimitiveNode *primitives;      /* Pointer to the buffer of primitives */
 
   SVECTOR       rotation;         /* Model rotation */
   VECTOR        position;         /* Model position */
@@ -363,7 +339,6 @@ typedef struct Object {
 } Object;
 
 void LoadObjectPRM(Object *object, char *filename);
-
 void RenderObject(Object *object, Camera *camera);
 
 #endif

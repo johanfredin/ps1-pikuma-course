@@ -7,27 +7,25 @@
 
 char *FileRead(char *filename, u_long *length) {
 	CdlFILE filepos;
-	int numsectors;
-	char *buffer = NULL;
 
 	if (CdSearchFile(&filepos, filename) == NULL) {
 		printf("%s file not found in the CD.", filename);
-	} else {
-		printf("Found %s in the CD.\n", filename);
-		numsectors = (filepos.size + 2047) / SECTOR;  // compute the number of sectors to read from the file
-		buffer = (char *)malloc3(SECTOR * numsectors);  	// allocate buffer for the file
-		if (!buffer) {
-			printf("Error allocating %d sectors, terminating...", numsectors);
-			exit(1);
-		}
+		exit(1);
+	} 
 
-		CdControl(CdlSetloc, (u_char *)&filepos.pos, 0);	 // set read target to the file
-		CdRead(numsectors, (u_long *)buffer, CdlModeSpeed);	 // start reading from the CD
-		CdReadSync(0, 0);									 // wait until the read is complete
+	printf("Found %s in the CD.\n", filename);
+	int numsectors = (filepos.size + 2047) / SECTOR;  		// compute the number of sectors to read from the file
+	char *buffer = (char *)malloc3(SECTOR * numsectors);  	// allocate buffer for the file
+	if (!buffer) {
+		printf("Error allocating %d sectors, terminating...", numsectors);
+		exit(1);
 	}
 
-	*length = filepos.size;
+	CdControl(CdlSetloc, (u_char *)&filepos.pos, 0);	 // set read target to the file
+	CdRead(numsectors, (u_long *)buffer, CdlModeSpeed);	 // start reading from the CD
+	CdReadSync(0, 0);									 		 // wait until the read is complete
 
+	*length = filepos.size;
 	return buffer;
 }
 

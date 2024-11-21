@@ -1,8 +1,7 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "stddef.h"
-#define MAX_TEXTURES 800
+#include <sys/types.h>
 
 #define CLUT4 0x00
 #define CLUT8 0x01
@@ -17,10 +16,12 @@
 #define CLUT(x, y) ((y << 6) | x)
 #define TPAGE(c, a, x, y) ((c << 7) | (a << 5) | ((x >> 6) + ((y & 0x100) >> 4)))
 
-#define TextureHOffset(x) (x & 0xFFC0)
+#define TextureHOffset(x) (x & 0xffc0)
 #define TextureVOffset(y) (y & 0x100)
 
-#define ClutType(t) ((t)->flags & 7)
+#define ClutType(t) (t->flags & 7)
+
+#define MAX_TEXTURES 800
 
 typedef struct Texture {
 	short type;
@@ -81,12 +82,11 @@ typedef struct Tim {
 	long flags;
 } Tim;
 
-void LoadTexture(char *filename);
+void LoadTextureCMP(char *filename);
 
-Texture *UploadTextureToVRAM(long timpointer);
+Texture *UploadTextureToVRAM(long timptr);
 
-Texture *GetFromTextureStore(u_short i);
-
-u_short GetTextureCount();
+Texture *GetFromTextureStore(u_int i);
+u_short GetTextureCount(void);
 
 #endif

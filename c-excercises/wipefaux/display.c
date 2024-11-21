@@ -5,7 +5,7 @@
 static DoubleBuff screen;	// Struct to hold the display & draw buffers
 static u_short currbuff;	// Holds the current buffer number (0 or 1)
 
-u_short GetCurrentBuff(void) {
+u_short GetCurrBuff(void) {
     return currbuff;
 }
 
@@ -59,7 +59,7 @@ void DisplayFrame(void) {
 	PutDrawEnv(&screen.draw[currbuff]);
 
 	// Draw the ordering table for the current buffer
-	DrawOTag(GetOTAt(currbuff, OT_LENGTH - 1));
+	DrawOTag(GetOTAt(currbuff, OT_LEN - 1));
 
 	// Swap current buffer
 	currbuff = !currbuff;

@@ -3,7 +3,7 @@
 
 #include <sys/types.h>
 
-#define OT_LENGTH 0x2000
+#define OT_LEN 0x2000
 #define PRIMBUF_LEN 0x20000
 
 void EmptyOT(u_short currbuff);

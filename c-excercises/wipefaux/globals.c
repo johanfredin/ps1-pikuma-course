@@ -1,12 +1,12 @@
 #include "globals.h"
 #include <libgpu.h>
 
-static u_long ot[2][OT_LENGTH];             // Ordering table holding pointers to sorted primitives
+static u_long ot[2][OT_LEN];             // Ordering table holding pointers to sorted primitives
 static char primbuff[2][PRIMBUF_LEN];       // Primitive buffer that holds the actual data for each primitive
 static char *nextprim;                      // Pointer to the next primitive in the primitive buffer
 
 void EmptyOT(u_short currbuff) {
-    ClearOTagR(ot[currbuff], OT_LENGTH);
+    ClearOTagR(ot[currbuff], OT_LEN);
 }
 
 void SetOTAt(u_short currbuff, u_int i, u_long value) {

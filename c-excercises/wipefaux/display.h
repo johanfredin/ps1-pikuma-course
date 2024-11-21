@@ -11,12 +11,12 @@
 #define SCREEN_Z 320
 
 typedef struct {
-	DRAWENV draw[2];
-	DISPENV disp[2];
+  DRAWENV draw[2];
+  DISPENV disp[2];
 } DoubleBuff;
 
+u_short GetCurrBuff(void);
 void ScreenInit(void);
 void DisplayFrame(void);
-u_short GetCurrentBuff(void);
 
 #endif

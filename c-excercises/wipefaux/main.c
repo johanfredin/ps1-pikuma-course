@@ -22,18 +22,18 @@ static void Setup(void) {
 	CdInit();
 	JoyPadInit();
 
-	ResetNextPrim(GetCurrentBuff());
+	ResetNextPrim(GetCurrBuff());
 
 	setVector(&camera.position, 0, -600, -900);
 	camera.lookat = (MATRIX){0};
 
-	LoadTexture("\\ALLSH.CMP;1");	
+	LoadTextureCMP("\\ALLSH.CMP;1");	
 	LoadObjectPRM(&object, "\\ALLSH.PRM;1");
 	
 }
 
 static void Update(void) {
-  EmptyOT(GetCurrentBuff());
+  EmptyOT(GetCurrBuff());
 
   JoyPadUpdate();
 
