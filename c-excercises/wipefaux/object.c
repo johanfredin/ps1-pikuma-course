@@ -59,7 +59,7 @@ static void LoadPeripherals(Object *object, u_char *bytes, u_long *b) {
 	}
 }
 
-static void LoadPrimitives(Object *object, u_char *bytes, u_long *b) {
+static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short texturestart) {
 	Texture *texture = NULL;
 	u_short uoffset, voffset;
 
@@ -102,6 +102,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b) {
 				prm->color = (CVECTOR){GetChar(bytes, b), GetChar(bytes, b), GetChar(bytes, b),
 									   GetChar(bytes, b)};
 
+				prm->texture += texturestart; // offset by the start texture of this prm
 				texture = GetFromTextureStore(prm->texture);
 				prm->tpage = texture->tpage;
 				prm->clut = texture->clut;
@@ -152,6 +153,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b) {
 				prm->color = (CVECTOR){GetChar(bytes, b), GetChar(bytes, b), GetChar(bytes, b),
 									   GetChar(bytes, b)};
 
+				prm->texture += texturestart; // offset by the start texture of this prm
 				texture = GetFromTextureStore(prm->texture);
 				prm->tpage = texture->tpage;
 				prm->clut = texture->clut;
@@ -209,6 +211,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b) {
 				prm->color[2] = (CVECTOR){GetChar(bytes, b), GetChar(bytes, b), GetChar(bytes, b),
 										  GetChar(bytes, b)};
 
+				prm->texture += texturestart; // offset by the start texture of this prm
 				texture = GetFromTextureStore(prm->texture);
 				prm->tpage = texture->tpage;
 				prm->clut = texture->clut;
@@ -271,6 +274,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b) {
 				prm->color[3] = (CVECTOR){GetChar(bytes, b), GetChar(bytes, b), GetChar(bytes, b),
 										  GetChar(bytes, b)};
 
+				prm->texture += texturestart; // offset by the start texture of this prm
 				texture = GetFromTextureStore(prm->texture);
 				prm->tpage = texture->tpage;
 				prm->clut = texture->clut;
@@ -364,7 +368,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b) {
 	}
 }
 
-void LoadObjectPRM(Object *object, char *filename) {
+void LoadObjectPRM(Object *object, char *filename, u_short texturestart) {
 	u_long length;
 	u_char *bytes = (u_char *)FileRead(filename, &length);
 	u_long b = 0;
@@ -375,7 +379,7 @@ void LoadObjectPRM(Object *object, char *filename) {
 	printf("Loading object: %s \n", object->name);
 
 	LoadPeripherals(object, bytes, &b);
-	LoadPrimitives(object, bytes, &b);
+	LoadPrimitives(object, bytes, &b, texturestart);
 
 	// Populate object's initial transform values
 	object->position = (VECTOR){object->origin.vx, object->origin.vy, object->origin.vz};

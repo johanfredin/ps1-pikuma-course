@@ -10,13 +10,16 @@
 
 extern char __heap_start, __sp;
 Camera camera;
-Object object;
+Object ship;
+Object rescu;
 
 VECTOR up = {0, -ONE, 0};
 
 static void Setup(void) {
 	// Initialize the heap
 	InitHeap3((unsigned long *) &__heap_start, (&__sp - 0x5000) - &__heap_start);
+
+	
 
 	ScreenInit();
 	CdInit();
@@ -27,8 +30,13 @@ static void Setup(void) {
 	setVector(&camera.position, 0, -600, -900);
 	camera.lookat = (MATRIX){0};
 
+	u_short shipstarttexture = GetTextureCount();
 	LoadTextureCMP("\\ALLSH.CMP;1");	
-	LoadObjectPRM(&object, "\\ALLSH.PRM;1");
+	LoadObjectPRM(&ship, "\\ALLSH.PRM;1", shipstarttexture);
+
+	u_short rescustarttexture = GetTextureCount();
+	LoadTextureCMP("\\RESCU.CMP;1");	
+	LoadObjectPRM(&rescu, "\\RESCU.PRM;1", rescustarttexture);
 	
 }
 
@@ -38,15 +46,15 @@ static void Update(void) {
   JoyPadUpdate();
 
   if (JoyPadCheck(PAD1_LEFT)) {
-    object.rotation.vy -= 15;
+    rescu.rotation.vy -= 15;
   }
   if (JoyPadCheck(PAD1_RIGHT)) {
-    object.rotation.vy += 15;
+    rescu.rotation.vy += 15;
   }
 
-  CameraLookAt(&camera, &object.position, &(VECTOR){0, -ONE, 0});
+  CameraLookAt(&camera, &rescu.position, &(VECTOR){0, -ONE, 0});
 
-  RenderObject(&object, &camera);
+  RenderObject(&rescu, &camera);
 }
 
 

@@ -338,7 +338,7 @@ typedef struct Object {
   VECTOR        scale;            /* Model scale */
 } Object;
 
-void LoadObjectPRM(Object *object, char *filename);
+void LoadObjectPRM(Object *object, char *filename, u_short texturestart);
 void RenderObject(Object *object, Camera *camera);
 
 #endif
