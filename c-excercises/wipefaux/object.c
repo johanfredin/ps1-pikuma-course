@@ -11,21 +11,29 @@
 #include "texture.h"
 #include "utils.h"
 
+#define NAME_LEN 16
+
 static inline void PadSkip(u_long *i, u_short skip) { *i += skip; }
+
+static inline void LogObject(Object *o) {
+	printf("------------------------\n");
+	printf("Name: %s\n", o->name);
+	printf("Normals: %d\n", o->numnormals);
+	printf("Vertices: %d\n", o->numvertices);
+	printf("Primitives: %d\n", o->numprimitives);
+	printf("Flags: %d\n", o->flags);
+	printf("Origin {x:%d, y:%d, z:%d}\n", o->origin.vx >> 12, o->origin.vy >> 12, o->origin.vz >> 12);
+}
 
 static void LoadPeripherals(Object *object, u_char *bytes, u_long *b) {
 	object->numvertices = GetShortBE(bytes, b);
 	PadSkip(b, 6);	// unused padding
-	printf("Num verts = %d \n", object->numvertices);
 
 	object->numnormals = GetShortBE(bytes, b);
 	PadSkip(b, 6);	// unused padding
-	printf("Num normals = %d \n", object->numnormals);
 
 	object->numprimitives = GetShortBE(bytes, b);
-	// object->primitives = NULL;
 	PadSkip(b, 22);	 // unused padding
-	printf("Num primitives = %d \n", object->numprimitives);
 
 	object->flags = GetShortBE(bytes, b);
 	PadSkip(b, 26);	 // unused padding
@@ -33,7 +41,6 @@ static void LoadPeripherals(Object *object, u_char *bytes, u_long *b) {
 	object->origin.vx = GetLongBE(bytes, b);
 	object->origin.vy = GetLongBE(bytes, b);
 	object->origin.vz = GetLongBE(bytes, b);
-	printf("Origin (%ld, %ld, %ld) \n", object->origin.vx, object->origin.vy, object->origin.vz);
 
 	// Skip unused bytes ("skeleton" information, rotation matrices, and extra flags)
 	PadSkip(b, 48);
@@ -44,8 +51,6 @@ static void LoadPeripherals(Object *object, u_char *bytes, u_long *b) {
 		object->vertices[i].vy = (GetShortBE(bytes, b));
 		object->vertices[i].vz = (GetShortBE(bytes, b));
 		PadSkip(b, 2);	// padding
-		printf("Vertex[%d] = (%d, %d, %d) \n", i, object->vertices[i].vx, object->vertices[i].vx,
-			   object->vertices[i].vx);
 	}
 
 	object->normals = (SVECTOR *)malloc3(object->numnormals * sizeof(SVECTOR));
@@ -54,8 +59,6 @@ static void LoadPeripherals(Object *object, u_char *bytes, u_long *b) {
 		object->normals[i].vy = GetShortBE(bytes, b);
 		object->normals[i].vz = GetShortBE(bytes, b);
 		PadSkip(b, 2);	// padding
-		printf("Normal[%d] = (%d, %d, %d) \n", i, object->normals[i].vx, object->normals[i].vx,
-			   object->normals[i].vx);
 	}
 }
 
@@ -69,7 +72,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 		object->primitives[i].flag = GetShortBE(bytes, b);
 		switch (object->primitives[i].type) {
 			case TYPE_F3: {
-				printf("Loading primitive type F3 \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(F3));
 				F3 *prm = (F3 *)object->primitives[i].primitive;
 				prm->type = TYPE_F3;
@@ -82,7 +84,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				break;
 			}
 			case TYPE_FT3: {
-				printf("Loading primitive type FT3 \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(FT3));
 				FT3 *prm = (FT3 *)object->primitives[i].primitive;
 				prm->type = TYPE_FT3;
@@ -117,7 +118,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				break;
 			}
 			case TYPE_F4: {
-				printf("Loading primitive type F4 \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(F4));
 				F4 *prm = (F4 *)object->primitives[i].primitive;
 				prm->type = TYPE_F4;
@@ -130,7 +130,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				break;
 			}
 			case TYPE_FT4: {
-				printf("Loading primitive type FT4 \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(FT4));
 				FT4 *prm = (FT4 *)object->primitives[i].primitive;
 				prm->type = TYPE_FT4;
@@ -170,7 +169,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				break;
 			}
 			case TYPE_G3: {
-				printf("Loading primitive type G3 \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(G3));
 				G3 *prm = (G3 *)object->primitives[i].primitive;
 				prm->type = TYPE_G3;
@@ -187,7 +185,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				break;
 			}
 			case TYPE_GT3: {
-				printf("Loading primitive type GT3 \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(GT3));
 				GT3 *prm = (GT3 *)object->primitives[i].primitive;
 				prm->type = TYPE_GT3;
@@ -226,7 +223,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				break;
 			}
 			case TYPE_G4: {
-				printf("Loading primitive type G4 \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(G4));
 				G4 *prm = (G4 *)object->primitives[i].primitive;
 				prm->type = TYPE_G4;
@@ -245,7 +241,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				break;
 			}
 			case TYPE_GT4: {
-				printf("Loading primitive type GT4 \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(GT4));
 				GT4 *prm = (GT4 *)object->primitives[i].primitive;
 				prm->type = TYPE_GT4;
@@ -292,7 +287,6 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 			}
 			case TYPE_TSPR:
 			case TYPE_BSPR: {
-				printf("Loading primitive type SPR \n");
 				object->primitives[i].primitive = (Prm *)malloc3(sizeof(SPR));
 				SPR *prm = (SPR *)object->primitives[i].primitive;
 				prm->type = TYPE_TSPR;
@@ -305,62 +299,50 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				break;
 			}
 			case TYPE_SPLINE: {
-				printf("Loading primitive type Spline \n");
 				PadSkip(b, 52);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_POINTLIGHT: {
-				printf("Loading primitive type PointLight\n");
 				PadSkip(b, 24);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_SPOTLIGHT: {
-				printf("Loading primitive type SpotLight\n");
 				PadSkip(b, 36);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_INFINITELIGHT: {
-				printf("Loading primitive type InfiniteLight\n");
 				PadSkip(b, 12);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_LSF3: {
-				printf("Loading primitive type LSF3\n");
 				PadSkip(b, 12);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_LSFT3: {
-				printf("Loading primitive type LSFT3\n");
 				PadSkip(b, 24);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_LSF4: {
-				printf("Loading primitive type LSF4\n");
 				PadSkip(b, 16);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_LSFT4: {
-				printf("Loading primitive type LSFT4\n");
 				PadSkip(b, 28);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_LSG3: {
-				printf("Loading primitive type LSG3\n");
 				PadSkip(b, 24);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_LSGT3: {
-				printf("Loading primitive type LSGT3\n");
 				PadSkip(b, 36);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_LSG4: {
-				printf("Loading primitive type LSG4\n");
 				PadSkip(b, 32);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
 			case TYPE_LSGT4: {
-				printf("Loading primitive type LSGT4\n");
 				PadSkip(b, 42);	 // --> skip this amount of bytes to bypass this primitive type
 				break;
 			}
@@ -373,12 +355,47 @@ void LoadObjectPRM(Object *object, char *filename, u_short texturestart) {
 	u_char *bytes = (u_char *)FileRead(filename, &length);
 	u_long b = 0;
 
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < NAME_LEN; i++) {
 		object->name[i] = GetChar(bytes, &b);
 	}
-	printf("Loading object: %s \n", object->name);
 
-	LoadPeripherals(object, bytes, &b);
+	
+	object->numvertices = GetShortBE(bytes, &b);
+	PadSkip(&b, 6);	// unused padding
+
+	object->numnormals = GetShortBE(bytes, &b);
+	PadSkip(&b, 6);	// unused padding
+
+	object->numprimitives = GetShortBE(bytes, &b);
+	PadSkip(&b, 22);	 // unused padding
+
+	object->flags = GetShortBE(bytes, &b);
+	PadSkip(&b, 26);	 // unused padding
+
+	object->origin.vx = GetLongBE(bytes, &b);
+	object->origin.vy = GetLongBE(bytes, &b);
+	object->origin.vz = GetLongBE(bytes, &b);
+
+	// Skip unused bytes ("skeleton" information, rotation matrices, and extra flags)
+	PadSkip(&b, 48);
+
+	object->vertices = (SVECTOR *)malloc3(object->numvertices * sizeof(SVECTOR));
+	for (int i = 0; i < object->numvertices; i++) {
+		object->vertices[i].vx = (GetShortBE(bytes, &b));
+		object->vertices[i].vy = (GetShortBE(bytes, &b));
+		object->vertices[i].vz = (GetShortBE(bytes, &b));
+		PadSkip(&b, 2);	// padding
+	}
+
+	object->normals = (SVECTOR *)malloc3(object->numnormals * sizeof(SVECTOR));
+	for (int i = 0; i < object->numnormals; i++) {
+		object->normals[i].vx = GetShortBE(bytes, &b);
+		object->normals[i].vy = GetShortBE(bytes, &b);
+		object->normals[i].vz = GetShortBE(bytes, &b);
+		PadSkip(&b, 2);	// padding
+	}
+
+	// Load all the primitives
 	LoadPrimitives(object, bytes, &b, texturestart);
 
 	// Populate object's initial transform values
@@ -388,6 +405,8 @@ void LoadObjectPRM(Object *object, char *filename, u_short texturestart) {
 
 	// Free the bytes
 	free3(bytes);
+
+	LogObject(object);
 }
 
 void RenderObject(Object *object, Camera *camera) {

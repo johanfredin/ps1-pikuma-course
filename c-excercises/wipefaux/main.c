@@ -19,8 +19,6 @@ static void Setup(void) {
 	// Initialize the heap
 	InitHeap3((unsigned long *) &__heap_start, (&__sp - 0x5000) - &__heap_start);
 
-	
-
 	ScreenInit();
 	CdInit();
 	JoyPadInit();
