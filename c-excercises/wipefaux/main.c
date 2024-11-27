@@ -30,22 +30,31 @@ static void Setup(void) {
 	CdInit();
 	JoyPadInit();
 
+	u_short shipstarttexture;
+	u_short scenestarttexture;
+  	u_short trackstarttexture;
+
+
 	ResetNextPrim(GetCurrBuff());
 
-	u_short shipstarttexture = GetTextureCount();
-	LoadTextureCMP("\\ALLSH.CMP;1");
+	scenestarttexture = GetTextureCount();
+	LoadTextureCMP("\\SCENE.CMP;1", NULL);
+	// sceneobjs = LoadObjectPRMs("\\SCENE.PRM;1", scenestarttexture);
+	
+	shipstarttexture = GetTextureCount();
+	LoadTextureCMP("\\ALLSH.CMP;1", NULL);
 	ships = LoadObjectPRMs("\\ALLSH.PRM;1", shipstarttexture);
 	ship = ships;
-
-	// Load track vertices, faces and sections
+	
+	
+	trackstarttexture = GetTextureCount();
+	LoadTextureCMP("\\LIBRARY.CMP;1", "\\LIBRARY.TTF;1");
 	LoadTrackVertices(&track, "\\TRACK.TRV;1");
-	LoadTrackFaces(&track, "\\TRACK.TRF;1");
+	LoadTrackFaces(&track, "\\TRACK.TRF;1", trackstarttexture);
 	LoadTrackSections(&track, "\\TRACK.TRS;1");
 
 
-	// u_short scenestarttexture = GetTextureCount();
-	// LoadTextureCMP("\\SCENE.CMP;1");
-	// sceneobjs = LoadObjectPRMs("\\SCENE.PRM;1", scenestarttexture);
+	
 
 	// Initialize ships position in the scene
 	setVector(&ship->position, 32599, -347, -45310);
@@ -78,8 +87,8 @@ static void Update(void) {
 
 	CameraLookAt(&camera, &ship->position, &up);
 
-	RenderTrack(&track, &camera);
 	RenderObject(ship, &camera);
+	RenderTrack(&track, &camera);
 
 }
 

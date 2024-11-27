@@ -5,6 +5,7 @@
 #include "libgpu.h"
 #include "libgte.h"
 #include "malloc.h"
+#include "texture.h"
 #include "utils.h"
 #include <inline_n.h>
 
@@ -36,7 +37,7 @@ void LoadTrackVertices(Track *track, char *filename) {
 	free3(bytes);
 }
 
-void LoadTrackFaces(Track *track, char *filename) {
+void LoadTrackFaces(Track *track, char *filename, u_short texturestart) {
 	u_long length;
 	u_char *bytes = (u_char *)FileRead(filename, &length);
 
@@ -44,7 +45,7 @@ void LoadTrackFaces(Track *track, char *filename) {
 
 	track->numfaces = length / BYTES_PER_FACE;
 	track->faces = calloc3(track->numfaces, sizeof(Face));
-
+	Texture *texture;
 	for (int i = 0; i < track->numfaces; i++) {
 		Face *face = &track->faces[i];
 		face->indices[0] = GetShortBE(bytes, &b);
@@ -61,11 +62,25 @@ void LoadTrackFaces(Track *track, char *filename) {
 
 		face->flags = GetChar(bytes, &b);
 
-		face->color.r = GetChar(bytes, &b);
-		face->color.g = GetChar(bytes, &b);
-		face->color.b = GetChar(bytes, &b);
+		face->color.r  = GetChar(bytes, &b);
+		face->color.g  = GetChar(bytes, &b);
+		face->color.b  = GetChar(bytes, &b);
 		face->color.cd = GetChar(bytes, &b);
+
+		face->texture += texturestart;
+		texture = GetFromTextureStore(face->texture);
+		face->tpage = texture->tpage;
+		face->clut  = texture->clut;
+		face->u0 = texture->u0;
+		face->v0 = texture->v0;
+		face->u1 = texture->u1;
+		face->v1 = texture->v1;
+		face->u2 = texture->u2;
+		face->v2 = texture->v2;
+		face->u3 = texture->u3;
+		face->v3 = texture->v3;
 	}
+
 
 	free3(bytes);
 }
@@ -118,7 +133,7 @@ static inline short Clamp16Bit(long value) {
     return (short) value;
 }
 
-static inline void DrawGrid(POLY_F4 *poly) {
+static inline void DrawGrid(POLY_FT4 *poly) {
 	for (int i = 0; i < 4; i++) {
 		LINE_F2 *line = (LINE_F2*) GetNextPrim();
 		setLineF2(line);
@@ -148,23 +163,20 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
 		 * section + the current face index
 		 */
 		Face *face = &track->faces[section->facestart + i];
-		POLY_F4 *poly = (POLY_F4 *) GetNextPrim();
+		POLY_FT4 *poly = (POLY_FT4 *) GetNextPrim();
 		
-        v0.vx = Clamp16Bit(track->vertices[face->indices[1]].vx - camera->position.vx); // --> the indices order from the TRF file has the first index at 1 and the second at 0 hence the weird order
-        v0.vy = Clamp16Bit(track->vertices[face->indices[1]].vy - camera->position.vy);
-        v0.vz = Clamp16Bit(track->vertices[face->indices[1]].vz - camera->position.vz);
-
-        v1.vx = Clamp16Bit(track->vertices[face->indices[0]].vx - camera->position.vx);
-        v1.vy = Clamp16Bit(track->vertices[face->indices[0]].vy - camera->position.vy);
-        v1.vz = Clamp16Bit(track->vertices[face->indices[0]].vz - camera->position.vz);
-
-        v2.vx = Clamp16Bit(track->vertices[face->indices[2]].vx - camera->position.vx);
-        v2.vy = Clamp16Bit(track->vertices[face->indices[2]].vy - camera->position.vy);
-        v2.vz = Clamp16Bit(track->vertices[face->indices[2]].vz - camera->position.vz);
-
-        v3.vx = Clamp16Bit(track->vertices[face->indices[3]].vx - camera->position.vx);
-        v3.vy = Clamp16Bit(track->vertices[face->indices[3]].vy - camera->position.vy);
-        v3.vz = Clamp16Bit(track->vertices[face->indices[3]].vz - camera->position.vz);
+        v0.vx = (short)(track->vertices[face->indices[1]].vx - camera->position.vx); // --> the indices order from the TRF file has the first index at 1 and the second at 0 hence the weird order
+        v0.vy = (short)(track->vertices[face->indices[1]].vy - camera->position.vy);
+        v0.vz = (short)(track->vertices[face->indices[1]].vz - camera->position.vz);
+        v1.vx = (short)(track->vertices[face->indices[0]].vx - camera->position.vx);
+        v1.vy = (short)(track->vertices[face->indices[0]].vy - camera->position.vy);
+        v1.vz = (short)(track->vertices[face->indices[0]].vz - camera->position.vz);
+        v2.vx = (short)(track->vertices[face->indices[2]].vx - camera->position.vx);
+        v2.vy = (short)(track->vertices[face->indices[2]].vy - camera->position.vy);
+        v2.vz = (short)(track->vertices[face->indices[2]].vz - camera->position.vz);
+        v3.vx = (short)(track->vertices[face->indices[3]].vx - camera->position.vx);
+        v3.vy = (short)(track->vertices[face->indices[3]].vy - camera->position.vy);
+        v3.vz = (short)(track->vertices[face->indices[3]].vz - camera->position.vz);
 
         
         gte_ldv0(&v0); 
@@ -183,24 +195,15 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
 		gte_avsz4();
 		gte_stotz(&otz);
 		if (otz > 0 && otz < OT_LEN) {
-			SetPolyF4(poly);
-			CVECTOR facecolor = (CVECTOR) {255, 255, 255};
-			if (face->flags & FACE_FLIP_TEXTURE) {
-				facecolor.r = 80;
-				facecolor.g = 80;
-				facecolor.b = 80;
-			}
-			if (face->flags & FACE_SPEED_UP) {
-				facecolor.r = 255;
-				facecolor.g = 0;
-				facecolor.b = 0;
-			}
-      		setRGB0(poly, facecolor.r, facecolor.g, facecolor.b);
+			setPolyFT4(poly);
+			setRGB0(poly, face->color.r, face->color.g, face->color.b);
+			poly->tpage = face->tpage;
+			poly->clut  = face->clut;
+			setUV4(poly, face->u0, face->v0, face->u1, face->v1, face->u2, face->v2, face->u3, face->v3);
 			addPrim(GetOTAt(GetCurrBuff(), otz), poly);
-			IncrementNextPrim(sizeof(POLY_F4));
+			IncrementNextPrim(sizeof(POLY_FT4));
 
-			// Draw lines for the quads
-			DrawGrid(poly);
+			// DrawGrid(poly);
 		}
 	}
 }
@@ -242,12 +245,12 @@ void RenderTrack(Track *track, Camera *camera) {
 	do {
 		// Calculate distance between curr section center and camera
 		dist.vx = Clamp16Bit(currsection->center.vx - cameraposvx);
-		dist.vy = Clamp16Bit(currsection->center.vx - cameraposvy);
-		dist.vz = Clamp16Bit(currsection->center.vx - cameraposvz);
+		dist.vy = Clamp16Bit(currsection->center.vy - cameraposvy);
+		dist.vz = Clamp16Bit(currsection->center.vz - cameraposvz);
 
 		distmagsq = MagnitudeSquared(&dist);
-		distmag = SquareRoot12(distmag);  // 12 = fixed point
-		if (distmag < 1) {
+		distmag = SquareRoot12(distmagsq);  // 12 = fixed point
+		if (distmag < 1350000) {
 			RenderTrackSection(track, currsection, camera);
 		}
 

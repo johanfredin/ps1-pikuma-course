@@ -22,6 +22,7 @@
 #define ClutType(t) (t->flags & 7)
 
 #define MAX_TEXTURES 800
+#define BYTES_PER_TILE 42
 
 typedef struct Texture {
 	short type;
@@ -82,7 +83,11 @@ typedef struct Tim {
 	long flags;
 } Tim;
 
-void LoadTextureCMP(char *filename);
+typedef struct Tile {
+	u_short tileindex;
+} Tile;
+
+void LoadTextureCMP(char *filename, char *filenamettf);
 
 Texture *UploadTextureToVRAM(long timptr);
 

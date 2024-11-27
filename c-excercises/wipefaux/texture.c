@@ -11,6 +11,12 @@
 
 static Texture *texturestore[MAX_TEXTURES];
 static u_short texturecount = 0;
+static long timoffsets[400];  // this array stores the offset (in bytes) of all uncompressed TIM
+
+static u_short textx = 320;
+static u_short texty = 0;
+static u_short clutx = 320;
+static u_short cluty = 256;
 
 Texture *GetFromTextureStore(u_int i) { return texturestore[i]; }
 
@@ -18,10 +24,41 @@ u_short GetTextureCount() { return texturecount; }
 
 static inline void PadSkip(u_long *i, u_short skip) { *i += skip; }
 
-void LoadTextureCMP(char *filename) {
+static inline void AddToTextureStore(Texture *t) {
+	if (t != NULL) {
+		texturestore[texturecount++] = t;
+	}
+	if (texturecount > MAX_TEXTURES) {
+		printf("MAX amount of textures exceeded!");
+	}
+}
+
+static void AcquireTTFData(char *filename) {
+	u_long length;
+	u_char *ttfbytes = (u_char *)FileRead(filename, &length);
+	u_short numtiles = length / BYTES_PER_TILE;	 // we have 42 bytes per tile
+	u_long b = 0;
+	Tile *tiles = (Tile *)calloc3(numtiles, sizeof(Tile));
+
+	// Each tile holds info about resolution for the textures
+	for (int i = 0; i < numtiles; i++) {
+		// Skip high and mid res
+		PadSkip(&b, 32);
+		PadSkip(&b, 8);
+
+		// Load the low-res tiles indices
+		tiles[i].tileindex = GetShortBE(ttfbytes, &b);
+		Texture *texture = UploadTextureToVRAM(timoffsets[tiles[i].tileindex]);
+	}
+
+	//TODO: Can probably ignore the tiles struct completely
+	free3(tiles);
+	free3(ttfbytes);
+}
+
+void LoadTextureCMP(char *filename, char *filenamettf) {
 	static void *timsbaseaddr;	  // This address holds the base address of the first TIM in memory
-	static long timoffsets[400];  // this array stores the offset (in bytes) of all uncompressed TIM
-								  // textures
+	
 	u_long b = 0;
 
 	Texture *texture = NULL;
@@ -43,7 +80,7 @@ void LoadTextureCMP(char *filename) {
 		// printf("Found TIM size: %lu\n", timsize);
 		totaltimsize += timsize;
 	}
-	// printf("Total size required for all TIMs is = %lu\n", totaltimsize);
+	printf("Total size required for all TIMs is = %lu\n", totaltimsize);
 
 	// Allocate the total memory necessary for all uncompressed TIMs in this CMP file
 	timsbaseaddr = (char *)malloc3(totaltimsize);
@@ -59,17 +96,15 @@ void LoadTextureCMP(char *filename) {
 	// Deallocating the file buffer
 	free3(bytes);
 
-	// Upload all uncompressed TIM textures (and their CLUTs) to VRAM
-	for (int i = 0; i < numtextures; i++) {
-		texture = UploadTextureToVRAM(timoffsets[i]);
-		if (!texture) {
-			printf("Texture was null!\n");
-			continue;
+	if (filenamettf == NULL) {
+		// If we are not processing track tile textures, proceed to upload ALL textures to VRAM
+		for (int i = 0; i < numtextures; i++) {
+			Texture *texture = UploadTextureToVRAM(timoffsets[i]);
+			AddToTextureStore(texture);
 		}
-		texturestore[texturecount++] = texture;
-		if (texturecount > MAX_TEXTURES) {
-			printf("MAX amount of textures exceeded!");
-		}
+	} else {
+		// If we are processing track tile textures we need to look at the TTF indices
+		AcquireTTFData(filenamettf);
 	}
 
 	// Since all textures are uploaded to VRAM we can deallocate the buffer
@@ -87,6 +122,29 @@ Texture *UploadTextureToVRAM(long timpointer) {
 		case CLUT_4BIT: {
 			TimClut4 *tc4 = (TimClut4 *)tim;
 			texture->type = CLUT4;
+
+			 // If the texture does not have textureX and textureY inside the TIM
+			if (!tc4->textureX && !tc4->textureY) {
+				tc4->textureX = textx;
+				tc4->textureY = texty;
+				tc4->clutX = clutx;
+				tc4->clutY = cluty;
+				tc4->clutW = 16;
+				tc4->clutH = 1;  // CLUT for 4-bit is always 16x1
+
+				clutx += 16;    // always increment clutx by 16
+				if (clutx >= 384) { // if we go over 384 in x, we go back to x=320 and one row down in Y
+					clutx = 320;
+					cluty += 1;
+				}
+
+				texty += 32;  // always increment tile texture size down 32 pixels
+				if (texty >= 256) {  // if we go over 256 in y, we go back up and 8 pixels to the right
+					textx += 8;
+					texty = 0;
+				}
+			}
+
 			texture->textureX = tc4->textureX;
 			texture->textureY = tc4->textureY;
 			texture->textureW = tc4->textureW;

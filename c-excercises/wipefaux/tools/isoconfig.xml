@@ -18,7 +18,9 @@
 			<file name="TRACK.TRV"		type="data"	source="../assets/TRACK02/TRACK.TRV"/>
 			<file name="TRACK.TRF"		type="data"	source="../assets/TRACK02/TRACK.TRF"/>
 			<file name="TRACK.TRS"		type="data"	source="../assets/TRACK02/TRACK.TRS"/>
-
+			<file name="LIBRARY.CMP"	type="data"	source="../assets/TRACK02/LIBRARY.CMP"/>
+			<file name="LIBRARY.TTF"	type="data"	source="../assets/TRACK02/LIBRARY.TTF"/>
+			
 
 			<!-- Add your own files or folders here -->
 			<dummy sectors="1024"/>

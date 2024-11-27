@@ -52,7 +52,7 @@ typedef struct Track {
 } Track;
 
 void LoadTrackVertices(Track *track, char *filename);       // <- .TRV file
-void LoadTrackFaces(Track *track, char *filename);          // <- .TRF file
+void LoadTrackFaces(Track *track, char *filename, u_short starttexture);          // <- .TRF file
 void LoadTrackSections(Track *track, char *filename);       // <- .TRS file
 void RenderTrack(Track *track, Camera *camera);
 
