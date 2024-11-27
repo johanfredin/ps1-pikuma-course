@@ -11,6 +11,8 @@
 #include "texture.h"
 #include "utils.h"
 
+#define LOG_OBJ 0
+
 #define NAME_LEN 16
 
 static inline void PadSkip(u_long *i, u_short skip) { *i += skip; }
@@ -22,7 +24,8 @@ static inline void LogObject(Object *o) {
 	printf("Vertices: %d\n", o->numvertices);
 	printf("Primitives: %d\n", o->numprimitives);
 	printf("Flags: %d\n", o->flags);
-	printf("Origin {x:%d, y:%d, z:%d}\n", o->origin.vx >> 12, o->origin.vy >> 12, o->origin.vz >> 12);
+	printf("Origin {x:%d, y:%d, z:%d}\n", (u_short)o->origin.vx >> 12, (u_short)o->origin.vy >> 12,
+		   (u_short)o->origin.vz >> 12);
 }
 
 static void LoadPeripherals(Object *object, u_char *bytes, u_long *b) {
@@ -103,7 +106,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				prm->color = (CVECTOR){GetChar(bytes, b), GetChar(bytes, b), GetChar(bytes, b),
 									   GetChar(bytes, b)};
 
-				prm->texture += texturestart; // offset by the start texture of this prm
+				prm->texture += texturestart;  // offset by the start texture of this prm
 				texture = GetFromTextureStore(prm->texture);
 				prm->tpage = texture->tpage;
 				prm->clut = texture->clut;
@@ -152,7 +155,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				prm->color = (CVECTOR){GetChar(bytes, b), GetChar(bytes, b), GetChar(bytes, b),
 									   GetChar(bytes, b)};
 
-				prm->texture += texturestart; // offset by the start texture of this prm
+				prm->texture += texturestart;  // offset by the start texture of this prm
 				texture = GetFromTextureStore(prm->texture);
 				prm->tpage = texture->tpage;
 				prm->clut = texture->clut;
@@ -208,7 +211,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				prm->color[2] = (CVECTOR){GetChar(bytes, b), GetChar(bytes, b), GetChar(bytes, b),
 										  GetChar(bytes, b)};
 
-				prm->texture += texturestart; // offset by the start texture of this prm
+				prm->texture += texturestart;  // offset by the start texture of this prm
 				texture = GetFromTextureStore(prm->texture);
 				prm->tpage = texture->tpage;
 				prm->clut = texture->clut;
@@ -269,7 +272,7 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 				prm->color[3] = (CVECTOR){GetChar(bytes, b), GetChar(bytes, b), GetChar(bytes, b),
 										  GetChar(bytes, b)};
 
-				prm->texture += texturestart; // offset by the start texture of this prm
+				prm->texture += texturestart;  // offset by the start texture of this prm
 				texture = GetFromTextureStore(prm->texture);
 				prm->tpage = texture->tpage;
 				prm->clut = texture->clut;
@@ -350,63 +353,84 @@ static void LoadPrimitives(Object *object, u_char *bytes, u_long *b, u_short tex
 	}
 }
 
-void LoadObjectPRM(Object *object, char *filename, u_short texturestart) {
-	u_long length;
-	u_char *bytes = (u_char *)FileRead(filename, &length);
-	u_long b = 0;
-
+static void LoadObjectPRM(Object *object, u_short texturestart, u_char *bytes, u_long *b) {
 	for (int i = 0; i < NAME_LEN; i++) {
-		object->name[i] = GetChar(bytes, &b);
+		object->name[i] = GetChar(bytes, b);
 	}
 
-	
-	object->numvertices = GetShortBE(bytes, &b);
-	PadSkip(&b, 6);	// unused padding
+	object->numvertices = GetShortBE(bytes, b);
+	PadSkip(b, 6);	 // unused padding
 
-	object->numnormals = GetShortBE(bytes, &b);
-	PadSkip(&b, 6);	// unused padding
+	object->numnormals = GetShortBE(bytes, b);
+	PadSkip(b, 6);	 // unused padding
 
-	object->numprimitives = GetShortBE(bytes, &b);
-	PadSkip(&b, 22);	 // unused padding
+	object->numprimitives = GetShortBE(bytes, b);
+	PadSkip(b, 22);  // unused padding
 
-	object->flags = GetShortBE(bytes, &b);
-	PadSkip(&b, 26);	 // unused padding
+	object->flags = GetShortBE(bytes, b);
+	PadSkip(b, 26);  // unused padding
 
-	object->origin.vx = GetLongBE(bytes, &b);
-	object->origin.vy = GetLongBE(bytes, &b);
-	object->origin.vz = GetLongBE(bytes, &b);
+	object->origin.vx = GetLongBE(bytes, b);
+	object->origin.vy = GetLongBE(bytes, b);
+	object->origin.vz = GetLongBE(bytes, b);
 
 	// Skip unused bytes ("skeleton" information, rotation matrices, and extra flags)
-	PadSkip(&b, 48);
+	PadSkip(b, 48);
 
 	object->vertices = (SVECTOR *)malloc3(object->numvertices * sizeof(SVECTOR));
 	for (int i = 0; i < object->numvertices; i++) {
-		object->vertices[i].vx = (GetShortBE(bytes, &b));
-		object->vertices[i].vy = (GetShortBE(bytes, &b));
-		object->vertices[i].vz = (GetShortBE(bytes, &b));
-		PadSkip(&b, 2);	// padding
+		object->vertices[i].vx = (GetShortBE(bytes, b));
+		object->vertices[i].vy = (GetShortBE(bytes, b));
+		object->vertices[i].vz = (GetShortBE(bytes, b));
+		PadSkip(b, 2);	 // padding
 	}
 
 	object->normals = (SVECTOR *)malloc3(object->numnormals * sizeof(SVECTOR));
 	for (int i = 0; i < object->numnormals; i++) {
-		object->normals[i].vx = GetShortBE(bytes, &b);
-		object->normals[i].vy = GetShortBE(bytes, &b);
-		object->normals[i].vz = GetShortBE(bytes, &b);
-		PadSkip(&b, 2);	// padding
+		object->normals[i].vx = GetShortBE(bytes, b);
+		object->normals[i].vy = GetShortBE(bytes, b);
+		object->normals[i].vz = GetShortBE(bytes, b);
+		PadSkip(b, 2);	 // padding
 	}
 
 	// Load all the primitives
-	LoadPrimitives(object, bytes, &b, texturestart);
+	LoadPrimitives(object, bytes, b, texturestart);
 
 	// Populate object's initial transform values
 	object->position = (VECTOR){object->origin.vx, object->origin.vy, object->origin.vz};
 	object->scale = (VECTOR){ONE, ONE, ONE};
 	object->rotation = (SVECTOR){0, 0, 0};
+}
+
+Object *LoadObjectPRMs(char *filename, u_short texturestart) {
+	u_long length;
+	u_char *bytes = (u_char *)FileRead(filename, &length);
+	u_long b = 0;
+
+	Object *root = (Object *)malloc3(sizeof(Object));
+	Object *curr = root;
+	while (b < length) {
+		LoadObjectPRM(curr, texturestart, bytes, &b);
+		printf("Bytes read: %lu out of %lu\n", b, length);
+		if (b >= length) {
+			printf("End of the line...\n");
+			curr->next = NULL;
+			break;
+		}
+		curr->next = (Object *)malloc3(sizeof(Object));
+		curr = curr->next;
+	}
 
 	// Free the bytes
 	free3(bytes);
+	
+	#if LOG_OBJ == 1
+	for(Object *o = root; o != NULL; o = o->next) {
+		LogObject(o);
+	}
+	#endif
 
-	LogObject(object);
+	return root;
 }
 
 void RenderObject(Object *object, Camera *camera) {

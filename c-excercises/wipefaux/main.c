@@ -1,23 +1,30 @@
-#include <libetc.h>
 #include <libcd.h>
+#include <libetc.h>
 #include <malloc.h>
+#include <stdio.h>
 
+#include "display.h"
 #include "globals.h"
 #include "joypad.h"
-#include "display.h"
+#include "libgpu.h"
 #include "object.h"
+#include "sys/types.h"
 #include "texture.h"
+#include "track.h"
 
 extern char __heap_start, __sp;
+
 Camera camera;
-Object ship;
-Object rescu;
+Object *ships, *ship;
+Object *sceneobjs;
+
+Track track;
 
 VECTOR up = {0, -ONE, 0};
 
 static void Setup(void) {
 	// Initialize the heap
-	InitHeap3((unsigned long *) &__heap_start, (&__sp - 0x5000) - &__heap_start);
+	InitHeap3((unsigned long *)&__heap_start, (&__sp - 0x5000) - &__heap_start);
 
 	ScreenInit();
 	CdInit();
@@ -25,44 +32,61 @@ static void Setup(void) {
 
 	ResetNextPrim(GetCurrBuff());
 
-	setVector(&camera.position, 0, -600, -900);
-	camera.lookat = (MATRIX){0};
-
 	u_short shipstarttexture = GetTextureCount();
-	LoadTextureCMP("\\ALLSH.CMP;1");	
-	LoadObjectPRM(&ship, "\\ALLSH.PRM;1", shipstarttexture);
+	LoadTextureCMP("\\ALLSH.CMP;1");
+	ships = LoadObjectPRMs("\\ALLSH.PRM;1", shipstarttexture);
+	ship = ships;
 
-	u_short rescustarttexture = GetTextureCount();
-	LoadTextureCMP("\\RESCU.CMP;1");	
-	LoadObjectPRM(&rescu, "\\RESCU.PRM;1", rescustarttexture);
-	
+	// Load track vertices, faces and sections
+	LoadTrackVertices(&track, "\\TRACK.TRV;1");
+	LoadTrackFaces(&track, "\\TRACK.TRF;1");
+	LoadTrackSections(&track, "\\TRACK.TRS;1");
+
+
+	u_short scenestarttexture = GetTextureCount();
+	LoadTextureCMP("\\SCENE.CMP;1");
+	// sceneobjs = LoadObjectPRMs("\\SCENE.PRM;1", scenestarttexture);
+
+	// Initialize ships position in the scene
+	setVector(&ship->position, 32599, -347, -45310);
+
+	// Initializes the cameras position
+	setVector(&camera.position, ship->position.vx, ship->position.vy - 100, ship->position.vz - 100);
+	camera.lookat = (MATRIX){0};
 }
 
 static void Update(void) {
-  EmptyOT(GetCurrBuff());
+	EmptyOT(GetCurrBuff());
 
-  JoyPadUpdate();
+	JoyPadUpdate();
 
-  if (JoyPadCheck(PAD1_LEFT)) {
-    rescu.rotation.vy -= 15;
-  }
-  if (JoyPadCheck(PAD1_RIGHT)) {
-    rescu.rotation.vy += 15;
-  }
+	if (JoyPadCheck(PAD1_LEFT)) {
+		camera.position.vx -= 100;
+	}
+	if (JoyPadCheck(PAD1_RIGHT)) {
+		camera.position.vx += 100;
+	}
+	if (JoyPadCheck(PAD1_UP)) {
+		camera.position.vz += 100;
+	}
+	if (JoyPadCheck(PAD1_DOWN)) {
+		camera.position.vz += 100;
+	}
 
-  CameraLookAt(&camera, &rescu.position, &(VECTOR){0, -ONE, 0});
+	CameraLookAt(&camera, &ship->position, &up);
 
-  RenderObject(&rescu, &camera);
+	RenderTrack(&track, &camera);
+	RenderObject(ship, &camera);
+	// for (Object *sceneobj = sceneobjs; sceneobj != NULL; sceneobj = sceneobj->next) {
+	// 	RenderObject(sceneobj, &camera);
+	// }
 }
 
-
-static void Render(void) {
-	DisplayFrame();
-}
+static void Render(void) { DisplayFrame(); }
 
 int main(void) {
 	Setup();
-	while(1) {
+	while (1) {
 		Update();
 		Render();
 	}

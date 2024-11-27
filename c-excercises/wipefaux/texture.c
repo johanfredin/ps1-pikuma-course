@@ -32,7 +32,7 @@ void LoadTextureCMP(char *filename) {
 
 	// Get num textures
 	u_short numtextures = GetLongLE(bytes, &b);
-	printf("Num textures: %d\n", numtextures);
+	// printf("Num textures: %d\n", numtextures);
 
 	// The next values of the file are the size (in bytes) of each TIM texture (uncompressed)
 	u_long totaltimsize = 0;
@@ -40,7 +40,7 @@ void LoadTextureCMP(char *filename) {
 		u_long timsize;
 		timoffsets[i] = totaltimsize;  // stores the offset (in bytes) to access each TIM texture
 		timsize = GetLongLE(bytes, &b);
-		printf("Found TIM size: %lu\n", timsize);
+		// printf("Found TIM size: %lu\n", timsize);
 		totaltimsize += timsize;
 	}
 	printf("Total size required for all TIMs is = %lu\n", totaltimsize);

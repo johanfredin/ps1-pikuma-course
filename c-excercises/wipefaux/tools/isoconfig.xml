@@ -7,11 +7,18 @@
 			<file name="SYSTEM.CNF"		type="data"	source="SYSTEM.CNF"/>
 			<file name="MAIN.EXE"		type="data"	source="../wipefaux.ps-exe"/>
 
-			<file name="ALLSH.PRM"		type="data"	source="../assets/common/ALLSH.PRM"/>
-			<file name="ALLSH.CMP"		type="data"	source="../assets/common/ALLSH.CMP"/>
+			<file name="ALLSH.PRM"		type="data"	source="../assets/COMMON/ALLSH.PRM"/>
+			<file name="ALLSH.CMP"		type="data"	source="../assets/COMMON/ALLSH.CMP"/>
 
-			<file name="RESCU.PRM"		type="data"	source="../assets/common/RESCU.PRM"/>
-			<file name="RESCU.CMP"		type="data"	source="../assets/common/RESCU.CMP"/>
+			<!-- Scene Data-->
+			<file name="SCENE.CMP"		type="data"	source="../assets/TRACK02/SCENE.CMP"/>
+			<file name="SCENE.PRM"		type="data"	source="../assets/TRACK02/SCENE.PRM"/>
+
+			<!-- Track data-->
+			<file name="TRACK.TRV"		type="data"	source="../assets/TRACK02/TRACK.TRV"/>
+			<file name="TRACK.TRF"		type="data"	source="../assets/TRACK02/TRACK.TRF"/>
+			<file name="TRACK.TRS"		type="data"	source="../assets/TRACK02/TRACK.TRS"/>
+
 
 			<!-- Add your own files or folders here -->
 			<dummy sectors="1024"/>

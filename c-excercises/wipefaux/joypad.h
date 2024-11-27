@@ -39,5 +39,4 @@ void JoyPadUpdate(void);
 
 int JoyPadCheck(int p);
 
-
 #endif
