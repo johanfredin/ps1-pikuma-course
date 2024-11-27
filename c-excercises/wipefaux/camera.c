@@ -34,10 +34,23 @@ void CameraLookAt(Camera *camera, VECTOR *target, VECTOR *up) {
 	camera->lookat.m[2][1] = z.vy;
 	camera->lookat.m[2][2] = z.vz;
 
+	// Translation part
 	pos.vx = -eye.vx;
 	pos.vy = -eye.vy;
 	pos.vz = -eye.vz;
 
+	// Save the rotation part into camera->rotmat
+	camera->rotmat.m[0][0] = x.vx;
+	camera->rotmat.m[0][1] = x.vy;
+	camera->rotmat.m[0][2] = x.vz;
+	camera->rotmat.m[1][0] = y.vx;
+	camera->rotmat.m[1][1] = y.vy;
+	camera->rotmat.m[1][2] = y.vz;
+	camera->rotmat.m[2][0] = z.vx;
+	camera->rotmat.m[2][1] = z.vy;
+	camera->rotmat.m[2][2] = z.vz;
+
+	// Proceed to combine both rotation and translation into camera->lookat
 	ApplyMatrixLV(&camera->lookat, &pos, &t);
 	TransMatrix(&camera->lookat, &t);
 }

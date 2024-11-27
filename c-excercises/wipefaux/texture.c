@@ -43,7 +43,7 @@ void LoadTextureCMP(char *filename) {
 		// printf("Found TIM size: %lu\n", timsize);
 		totaltimsize += timsize;
 	}
-	printf("Total size required for all TIMs is = %lu\n", totaltimsize);
+	// printf("Total size required for all TIMs is = %lu\n", totaltimsize);
 
 	// Allocate the total memory necessary for all uncompressed TIMs in this CMP file
 	timsbaseaddr = (char *)malloc3(totaltimsize);

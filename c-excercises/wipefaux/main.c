@@ -43,16 +43,17 @@ static void Setup(void) {
 	LoadTrackSections(&track, "\\TRACK.TRS;1");
 
 
-	u_short scenestarttexture = GetTextureCount();
-	LoadTextureCMP("\\SCENE.CMP;1");
+	// u_short scenestarttexture = GetTextureCount();
+	// LoadTextureCMP("\\SCENE.CMP;1");
 	// sceneobjs = LoadObjectPRMs("\\SCENE.PRM;1", scenestarttexture);
 
 	// Initialize ships position in the scene
 	setVector(&ship->position, 32599, -347, -45310);
 
 	// Initializes the cameras position
-	setVector(&camera.position, ship->position.vx, ship->position.vy - 100, ship->position.vz - 100);
+	setVector(&camera.position, ship->position.vx, ship->position.vy - 200, ship->position.vz - 2000);
 	camera.lookat = (MATRIX){0};
+	
 }
 
 static void Update(void) {
@@ -61,25 +62,25 @@ static void Update(void) {
 	JoyPadUpdate();
 
 	if (JoyPadCheck(PAD1_LEFT)) {
-		camera.position.vx -= 100;
+		camera.position.vx -= 300;
 	}
 	if (JoyPadCheck(PAD1_RIGHT)) {
-		camera.position.vx += 100;
+		camera.position.vx += 300;
 	}
 	if (JoyPadCheck(PAD1_UP)) {
-		camera.position.vz += 100;
+		camera.position.vz += 300;
+		ship->position.vz += 300;
 	}
 	if (JoyPadCheck(PAD1_DOWN)) {
-		camera.position.vz += 100;
+		camera.position.vz -= 300;
+		ship->position.vz -= 300;
 	}
 
 	CameraLookAt(&camera, &ship->position, &up);
 
 	RenderTrack(&track, &camera);
 	RenderObject(ship, &camera);
-	// for (Object *sceneobj = sceneobjs; sceneobj != NULL; sceneobj = sceneobj->next) {
-	// 	RenderObject(sceneobj, &camera);
-	// }
+
 }
 
 static void Render(void) { DisplayFrame(); }

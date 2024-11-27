@@ -6,6 +6,7 @@
 typedef struct Camera {
     VECTOR position;
     SVECTOR rotation;
+    MATRIX rotmat;
     MATRIX lookat;
 } Camera;
 
