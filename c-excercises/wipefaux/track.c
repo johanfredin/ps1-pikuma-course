@@ -56,9 +56,8 @@ void LoadTrackFaces(Track *track, char *filename, u_short texturestart) {
 		face->normal.vx = GetShortBE(bytes, &b);
 		face->normal.vy = GetShortBE(bytes, &b);
 		face->normal.vz = GetShortBE(bytes, &b);
-		// face->normal.pad = GetShortBE(bytes, &b);
 
-		face->texture = GetChar(bytes, &b);
+		face->texture = GetChar(bytes, &b) + texturestart;
 
 		face->flags = GetChar(bytes, &b);
 
@@ -67,7 +66,6 @@ void LoadTrackFaces(Track *track, char *filename, u_short texturestart) {
 		face->color.b  = GetChar(bytes, &b);
 		face->color.cd = GetChar(bytes, &b);
 
-		face->texture += texturestart;
 		texture = GetFromTextureStore(face->texture);
 		face->tpage = texture->tpage;
 		face->clut  = texture->clut;
@@ -104,7 +102,6 @@ void LoadTrackSections(Track *track, char *filename) {
 		section->center.vx = GetLongBE(bytes, &b);
 		section->center.vy = GetLongBE(bytes, &b);
 		section->center.vz = GetLongBE(bytes, &b);
-		// section->center.pad = GetLongBE(bytes, &b);
 
 		PadSkip(118, &b);
 
@@ -165,18 +162,18 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
 		Face *face = &track->faces[section->facestart + i];
 		POLY_FT4 *poly = (POLY_FT4 *) GetNextPrim();
 		
-        v0.vx = (short)(track->vertices[face->indices[1]].vx - camera->position.vx); // --> the indices order from the TRF file has the first index at 1 and the second at 0 hence the weird order
-        v0.vy = (short)(track->vertices[face->indices[1]].vy - camera->position.vy);
-        v0.vz = (short)(track->vertices[face->indices[1]].vz - camera->position.vz);
-        v1.vx = (short)(track->vertices[face->indices[0]].vx - camera->position.vx);
-        v1.vy = (short)(track->vertices[face->indices[0]].vy - camera->position.vy);
-        v1.vz = (short)(track->vertices[face->indices[0]].vz - camera->position.vz);
-        v2.vx = (short)(track->vertices[face->indices[2]].vx - camera->position.vx);
-        v2.vy = (short)(track->vertices[face->indices[2]].vy - camera->position.vy);
-        v2.vz = (short)(track->vertices[face->indices[2]].vz - camera->position.vz);
-        v3.vx = (short)(track->vertices[face->indices[3]].vx - camera->position.vx);
-        v3.vy = (short)(track->vertices[face->indices[3]].vy - camera->position.vy);
-        v3.vz = (short)(track->vertices[face->indices[3]].vz - camera->position.vz);
+        v0.vx = Clamp16Bit(track->vertices[face->indices[1]].vx - camera->position.vx); // --> the indices order from the TRF file has the first index at 1 and the second at 0 hence the weird order
+        v0.vy = Clamp16Bit(track->vertices[face->indices[1]].vy - camera->position.vy);
+        v0.vz = Clamp16Bit(track->vertices[face->indices[1]].vz - camera->position.vz);
+        v1.vx = Clamp16Bit(track->vertices[face->indices[0]].vx - camera->position.vx);
+        v1.vy = Clamp16Bit(track->vertices[face->indices[0]].vy - camera->position.vy);
+        v1.vz = Clamp16Bit(track->vertices[face->indices[0]].vz - camera->position.vz);
+        v2.vx = Clamp16Bit(track->vertices[face->indices[2]].vx - camera->position.vx);
+        v2.vy = Clamp16Bit(track->vertices[face->indices[2]].vy - camera->position.vy);
+        v2.vz = Clamp16Bit(track->vertices[face->indices[2]].vz - camera->position.vz);
+        v3.vx = Clamp16Bit(track->vertices[face->indices[3]].vx - camera->position.vx);
+        v3.vy = Clamp16Bit(track->vertices[face->indices[3]].vy - camera->position.vy);
+        v3.vz = Clamp16Bit(track->vertices[face->indices[3]].vz - camera->position.vz);
 
         
         gte_ldv0(&v0); 
@@ -203,7 +200,7 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
 			addPrim(GetOTAt(GetCurrBuff(), otz), poly);
 			IncrementNextPrim(sizeof(POLY_FT4));
 
-			// DrawGrid(poly);
+			DrawGrid(poly);
 		}
 	}
 }

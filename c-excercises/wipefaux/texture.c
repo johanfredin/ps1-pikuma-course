@@ -11,7 +11,7 @@
 
 static Texture *texturestore[MAX_TEXTURES];
 static u_short texturecount = 0;
-static long timoffsets[400];  // this array stores the offset (in bytes) of all uncompressed TIM
+
 
 static u_short textx = 320;
 static u_short texty = 0;
@@ -27,18 +27,19 @@ static inline void PadSkip(u_long *i, u_short skip) { *i += skip; }
 static inline void AddToTextureStore(Texture *t) {
 	if (t != NULL) {
 		texturestore[texturecount++] = t;
+	} else {
+		printf("NULL texture\n");
 	}
 	if (texturecount > MAX_TEXTURES) {
-		printf("MAX amount of textures exceeded!");
+		printf("MAX amount of textures exceeded!\n");
 	}
 }
 
-static void AcquireTTFData(char *filename) {
+static void AcquireTTFData(char *filename, long *timoffsets) {
 	u_long length;
 	u_char *ttfbytes = (u_char *)FileRead(filename, &length);
 	u_short numtiles = length / BYTES_PER_TILE;	 // we have 42 bytes per tile
 	u_long b = 0;
-	Tile *tiles = (Tile *)calloc3(numtiles, sizeof(Tile));
 
 	// Each tile holds info about resolution for the textures
 	for (int i = 0; i < numtiles; i++) {
@@ -47,18 +48,17 @@ static void AcquireTTFData(char *filename) {
 		PadSkip(&b, 8);
 
 		// Load the low-res tiles indices
-		tiles[i].tileindex = GetShortBE(ttfbytes, &b);
-		Texture *texture = UploadTextureToVRAM(timoffsets[tiles[i].tileindex]);
+		u_short tileindex = GetShortBE(ttfbytes, &b);
+		Texture *texture = UploadTextureToVRAM(timoffsets[tileindex]);
 	}
 
 	//TODO: Can probably ignore the tiles struct completely
-	free3(tiles);
 	free3(ttfbytes);
 }
 
 void LoadTextureCMP(char *filename, char *filenamettf) {
 	static void *timsbaseaddr;	  // This address holds the base address of the first TIM in memory
-	
+	static long timoffsets[400];  // this array stores the offset (in bytes) of all uncompressed TIM
 	u_long b = 0;
 
 	Texture *texture = NULL;
@@ -104,7 +104,23 @@ void LoadTextureCMP(char *filename, char *filenamettf) {
 		}
 	} else {
 		// If we are processing track tile textures we need to look at the TTF indices
-		AcquireTTFData(filenamettf);
+		// AcquireTTFData(filenamettf, timoffsets);
+		u_long length;
+		u_char *ttfbytes = (u_char *)FileRead(filenamettf, &length);
+		u_short numtiles = length / BYTES_PER_TILE;	 // we have 42 bytes per tile
+		u_long b = 0;
+
+		// Each tile holds info about resolution for the textures
+		for (int i = 0; i < numtiles; i++) {
+			// Skip high and mid res
+			PadSkip(&b, 32);
+			PadSkip(&b, 8);
+
+			// Load the low-res tiles indices
+			u_short tileindex = GetShortBE(ttfbytes, &b);
+			Texture *texture = UploadTextureToVRAM(timoffsets[tileindex]);
+		}
+		free3(ttfbytes);
 	}
 
 	// Since all textures are uploaded to VRAM we can deallocate the buffer

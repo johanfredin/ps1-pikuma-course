@@ -37,8 +37,8 @@ static void Setup(void) {
 
 	ResetNextPrim(GetCurrBuff());
 
-	scenestarttexture = GetTextureCount();
-	LoadTextureCMP("\\SCENE.CMP;1", NULL);
+	// scenestarttexture = GetTextureCount();
+	// LoadTextureCMP("\\SCENE.CMP;1", NULL);
 	// sceneobjs = LoadObjectPRMs("\\SCENE.PRM;1", scenestarttexture);
 	
 	shipstarttexture = GetTextureCount();
