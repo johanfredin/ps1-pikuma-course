@@ -11,6 +11,7 @@
 
 #define MAX_SIGNED_16_BIT 32767
 #define MIN_SIGNED_16_BIT -32767
+#define MAX_DISTANCE 1350000
 
 static inline void PadSkip(u_short skip, u_long *i) { *i += skip; }
 
@@ -66,14 +67,29 @@ void LoadTrackFaces(Track *track, char *filename, u_short texturestart) {
 		texture = GetFromTextureStore(face->texture);
 		face->tpage = texture->tpage;
 		face->clut  = texture->clut;
-		face->u0 = texture->u0;
-		face->v0 = texture->v0;
-		face->u1 = texture->u1;
-		face->v1 = texture->v1;
-		face->u2 = texture->u2;
-		face->v2 = texture->v2;
-		face->u3 = texture->u3;
-		face->v3 = texture->v3;
+
+		if(face->flags & FACE_FLIP_TEXTURE) {
+			// Flit the texture uv coords if flag set on face
+			face->u0 = texture->u1;
+			face->v0 = texture->v1;
+			face->u1 = texture->u0;
+			face->v1 = texture->v0;
+			face->u2 = texture->u3;
+			face->v2 = texture->v3;
+			face->u3 = texture->u2;
+			face->v3 = texture->v2;
+		} else {
+			face->u0 = texture->u0;
+			face->v0 = texture->v0;
+			face->u1 = texture->u1;
+			face->v1 = texture->v1;
+			face->u2 = texture->u2;
+			face->v2 = texture->v2;
+			face->u3 = texture->u3;
+			face->v3 = texture->v3;
+		}
+
+		
 	}
 
 
@@ -143,21 +159,87 @@ static inline void DrawGrid(POLY_FT4 *poly) {
 	}
 }
 
-static inline void RenderTrackSection(Track *track, Section *section, Camera *camera) {
-	short nclip;
-    long otz;
+static void RenderQuadRecursice(Face *face, SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, u_char level, u_char depth) {
+	if (level >= depth) {
+		short nclip;
+    	long otz;
+		POLY_FT4 *poly = (POLY_FT4 *) GetNextPrim();
 
+		gte_ldv0(&v0);
+		gte_ldv1(&v1);
+		gte_ldv2(&v2);
+		gte_rtpt();
+		gte_nclip();
+		gte_stopz(&nclip);
+		if (nclip < 0) {
+			return;
+		}
+		gte_stsxy0(&poly->x0);
+		gte_ldv0(&v3);
+		gte_rtps();
+		gte_stsxy3(&poly->x1, &poly->x2, &poly->x3);
+		gte_avsz4();
+		gte_stotz(&otz);
+		if (otz > 0 && otz < OT_LEN) {
+			setPolyFT4(poly);
+			setRGB0(poly, face->color.r, face->color.g, face->color.b);
+			poly->tpage = face->tpage;
+			poly->clut = face->clut;
+
+			setUV4(
+				poly, 
+				face->u0, face->v0, 
+				face->u1, face->v1, 
+				face->u2, face->v2, 
+				face->u3, face->v3
+			);
+			
+			addPrim(GetOTAt(GetCurrBuff(), otz), poly);
+			IncrementNextPrim(sizeof(POLY_FT4));
+			DrawGrid(poly);
+		}
+	} else {
+		/*
+		* 		Create 4 sub-quads
+		*		==================
+		*
+		*	   (v0)		   (vm01)      (v1)
+		*		*-----------*----------*
+		*		|			|		   |
+		*		|			|		   |
+		*		|			|		   |	
+		* (vm02)*-----------*----------*(vm13)
+		*		|		  (vm03)	   |
+		*		|			|		   |
+		*		|			|		   |
+		*		*-----------*----------*	
+		*	   (v2)		  (vm32)	   (v3)
+		*/
+
+		SVECTOR vm01 = (SVECTOR){(v0->vx + v1->vx) >> 1, (v0->vy + v1->vy) >> 1, (v0->vz + v1->vz) >> 1};
+		SVECTOR vm02 = (SVECTOR){(v0->vx + v2->vx) >> 1, (v0->vy + v2->vy) >> 1, (v0->vz + v2->vz) >> 1};
+		SVECTOR vm03 = (SVECTOR){(v0->vx + v3->vx) >> 1, (v0->vy + v3->vy) >> 1, (v0->vz + v3->vz) >> 1};
+		SVECTOR vm12 = (SVECTOR){(v1->vx + v2->vx) >> 1, (v1->vy + v2->vy) >> 1, (v1->vz + v2->vz) >> 1};
+		SVECTOR vm13 = (SVECTOR){(v1->vx + v3->vx) >> 1, (v1->vy + v3->vy) >> 1, (v1->vz + v3->vz) >> 1};
+		SVECTOR vm32 = (SVECTOR){(v3->vx + v2->vx) >> 1, (v3->vy + v2->vy) >> 1, (v3->vz + v2->vz) >> 1};
+
+		RenderQuadRecursice(face, v0, &vm01, &vm02, &vm03, level + 1, depth);
+		RenderQuadRecursice(face, &vm01, v1, &vm03, &vm13, level + 1, depth);
+		RenderQuadRecursice(face, &vm02, &vm03, v2, &vm32, level + 1, depth);
+		RenderQuadRecursice(face, &vm03, &vm13, &vm32, v3, level + 1, depth);
+	}
+}
+
+static inline void RenderTrackSection(Track *track, Section *section, Camera *camera, u_char depth) {
     SVECTOR v0, v1, v2, v3;
 
-    for (u_long i = 0; i < section->numfaces; i++) {
+	for (u_long i = 0; i < section->numfaces; i++) {
 		// Face *face = track->faces + section->facestart + i;
 		/*
 		 * Acquire the correct face by offsetting the track faces with the facestart index of the
 		 * section + the current face index
 		 */
 		Face *face = &track->faces[section->facestart + i];
-		POLY_FT4 *poly = (POLY_FT4 *) GetNextPrim();
-		
         v0.vx = Clamp16Bit(track->vertices[face->indices[1]].vx - camera->position.vx); // --> the indices order from the TRF file has the first index at 1 and the second at 0 hence the weird order
         v0.vy = Clamp16Bit(track->vertices[face->indices[1]].vy - camera->position.vy);
         v0.vz = Clamp16Bit(track->vertices[face->indices[1]].vz - camera->position.vz);
@@ -171,32 +253,8 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
         v3.vy = Clamp16Bit(track->vertices[face->indices[3]].vy - camera->position.vy);
         v3.vz = Clamp16Bit(track->vertices[face->indices[3]].vz - camera->position.vz);
 
-        
-        gte_ldv0(&v0); 
-		gte_ldv1(&v1);
-		gte_ldv2(&v2);
-		gte_rtpt();
-		gte_nclip();
-		gte_stopz(&nclip);
-		if (nclip < 0) {
-			continue;
-		}
-		gte_stsxy0(&poly->x0);
-		gte_ldv0(&v3);
-		gte_rtps();
-		gte_stsxy3(&poly->x1, &poly->x2, &poly->x3);
-		gte_avsz4();
-		gte_stotz(&otz);
-		if (otz > 0 && otz < OT_LEN) {
-			setPolyFT4(poly);
-			setRGB0(poly, face->color.r, face->color.g, face->color.b);
-			poly->tpage = face->tpage;
-			poly->clut  = face->clut;
-			setUV4(poly, face->u0, face->v0, face->u1, face->v1, face->u2, face->v2, face->u3, face->v3);
-			addPrim(GetOTAt(GetCurrBuff(), otz), poly);
-			IncrementNextPrim(sizeof(POLY_FT4));
-			DrawGrid(poly);
-		}
+
+		RenderQuadRecursice(face, &v0, &v1, &v2, &v3, 0, depth);
 	}
 }
 
@@ -210,7 +268,6 @@ void RenderTrack(Track *track, Camera *camera) {
 
 	VECTOR dist;
 	u_long distmagsq;  // square root of distance magnitude
-	u_long distmag;
 
 	const long cameraposvx = camera->position.vx;
 	const long cameraposvy = camera->position.vy;
@@ -241,9 +298,16 @@ void RenderTrack(Track *track, Camera *camera) {
 		dist.vz = Clamp16Bit(currsection->center.vz - cameraposvz);
 
 		distmagsq = MagnitudeSquared(&dist);
-		distmag = SquareRoot12(distmagsq);  // 12 = fixed point
-		if (distmag < 1350000) {
-			RenderTrackSection(track, currsection, camera);
+		const u_long distmag = SquareRoot12(distmagsq);  // 12 = fixed point
+		if (distmag < MAX_DISTANCE) {
+			u_char depth = 0;
+			if (distancemag < 600000) {
+				depth = 1;
+			} else if (distancemag < 200000) {
+				depth = 2;
+			}
+
+			RenderTrackSection(track, currsection, camera, depth);
 		}
 
 		currsection = currsection->next;
