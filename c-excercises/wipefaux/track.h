@@ -9,8 +9,12 @@
 #define FACE_WEAPON_GRID_LEFT   2
 #define FACE_FLIP_TEXTURE       4
 #define FACE_WEAPON_GRID_RIGHT  8
-#define FACE_START_GRID         16
-#define FACE_SPEED_UP           32
+#define FACE_START_GRID        16
+#define FACE_SPEED_UP          32
+
+#define BYTES_PER_VERTEX    16
+#define BYTES_PER_FACE      20
+#define BYTES_PER_SECTION  156
 
 typedef struct Face {
 	short indices[4];
