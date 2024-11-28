@@ -13,6 +13,9 @@
 #include "texture.h"
 #include "track.h"
 
+#define CAMERA_ROT_SPEED 50
+#define SHIP_SPEED 200
+
 extern char __heap_start, __sp;
 
 Camera camera;
@@ -61,13 +64,13 @@ static void Setup(void) {
 	LoadTrackSections(&track, "\\TRACK.TRS;1");
 
 	// Load the current ship object from the linked list
-	ship = ships->next;
+	ship = ships;
 
 	// Initialize ship's position in the scene
 	setVector(&ship->position, 32599, -347, -45310);
 
 	// Initializes camera position
-	setVector(&camera.position, ship->position.vx, ship->position.vy - 300, ship->position.vz - 1000);
+	setVector(&camera.position, ship->position.vx, ship->position.vy - 700, ship->position.vz - 1600);
 	camera.lookat = (MATRIX){0};
 	camera.rotmat = (MATRIX){0};
 }
@@ -78,24 +81,24 @@ static void Update(void) {
 	JoyPadUpdate();
 
 	if (JoyPadCheck(PAD1_LEFT)) {
-		camera.position.vx -= 10;
+		camera.position.vx -= CAMERA_ROT_SPEED;
 	}
 
 	if (JoyPadCheck(PAD1_RIGHT)) {
-		camera.position.vx += 10;
+		camera.position.vx += CAMERA_ROT_SPEED;
 	}
 
 	if (JoyPadCheck(PAD1_UP)) {
-		camera.position.vz += 100;
-		ship->position.vz += 100;
+		camera.position.vz += SHIP_SPEED;
+		ship->position.vz += SHIP_SPEED;
 	}
 
 	if (JoyPadCheck(PAD1_DOWN)) {
-		camera.position.vz -= 100;
-		ship->position.vz -= 100;
+		camera.position.vz -= SHIP_SPEED;
+		ship->position.vz -= SHIP_SPEED;
 	}
 
-	CameraLookAt(&camera, &ship->position, &(VECTOR){0, -ONE, 0});
+	CameraLookAt(&camera, &ship->position, &up);
 
 	// RenderSceneObjects(sceneobjs, &camera);
 	RenderObject(ship, &camera);

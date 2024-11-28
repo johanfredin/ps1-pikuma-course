@@ -6,12 +6,14 @@
 #include "libgte.h"
 #include "malloc.h"
 #include "texture.h"
+#include "types.h"
 #include "utils.h"
 #include <inline_n.h>
 
 #define MAX_SIGNED_16_BIT 32767
 #define MIN_SIGNED_16_BIT -32767
 #define MAX_DISTANCE 1350000
+#define DRAW_GRID 0
 
 static inline void PadSkip(u_short skip, u_long *i) { *i += skip; }
 
@@ -143,6 +145,7 @@ static inline short Clamp16Bit(long value) {
     return (short) value;
 }
 
+#if DRAW_GRID
 static inline void DrawGrid(POLY_FT4 *poly) {
 	for (int i = 0; i < 4; i++) {
 		LINE_F2 *line = (LINE_F2*) GetNextPrim();
@@ -158,24 +161,26 @@ static inline void DrawGrid(POLY_FT4 *poly) {
 		IncrementNextPrim(sizeof(LINE_F2));
 	}
 }
+#endif
 
-static void RenderQuadRecursice(Face *face, SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, u_char level, u_char depth) {
+static void RenderQuadRecursive(Face* face, SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, u_char tu0, u_char tv0, u_char tu1, u_char tv1, u_char tu2, u_char tv2, u_char tu3, u_char tv3, u_char level, u_char depth) {
 	if (level >= depth) {
 		short nclip;
-    	long otz;
-		POLY_FT4 *poly = (POLY_FT4 *) GetNextPrim();
 
-		gte_ldv0(&v0);
-		gte_ldv1(&v1);
-		gte_ldv2(&v2);
+		gte_ldv0(v0);
+		gte_ldv1(v1);
+		gte_ldv2(v2);
 		gte_rtpt();
 		gte_nclip();
 		gte_stopz(&nclip);
 		if (nclip < 0) {
 			return;
 		}
+		
+		POLY_FT4 *poly = (POLY_FT4 *) GetNextPrim();
+		long otz;
 		gte_stsxy0(&poly->x0);
-		gte_ldv0(&v3);
+		gte_ldv0(v3);
 		gte_rtps();
 		gte_stsxy3(&poly->x1, &poly->x2, &poly->x3);
 		gte_avsz4();
@@ -185,18 +190,13 @@ static void RenderQuadRecursice(Face *face, SVECTOR *v0, SVECTOR *v1, SVECTOR *v
 			setRGB0(poly, face->color.r, face->color.g, face->color.b);
 			poly->tpage = face->tpage;
 			poly->clut = face->clut;
-
-			setUV4(
-				poly, 
-				face->u0, face->v0, 
-				face->u1, face->v1, 
-				face->u2, face->v2, 
-				face->u3, face->v3
-			);
-			
+	      	setUV4(poly, tu0, tv0, tu1, tv1, tu2, tv2, tu3, tv3);
 			addPrim(GetOTAt(GetCurrBuff(), otz), poly);
 			IncrementNextPrim(sizeof(POLY_FT4));
+
+#if DRAW_GRID
 			DrawGrid(poly);
+#endif
 		}
 	} else {
 		/*
@@ -216,6 +216,7 @@ static void RenderQuadRecursice(Face *face, SVECTOR *v0, SVECTOR *v1, SVECTOR *v
 		*	   (v2)		  (vm32)	   (v3)
 		*/
 
+		// If lefel is < depth we keed sub-dividing out quad
 		SVECTOR vm01 = (SVECTOR){(v0->vx + v1->vx) >> 1, (v0->vy + v1->vy) >> 1, (v0->vz + v1->vz) >> 1};
 		SVECTOR vm02 = (SVECTOR){(v0->vx + v2->vx) >> 1, (v0->vy + v2->vy) >> 1, (v0->vz + v2->vz) >> 1};
 		SVECTOR vm03 = (SVECTOR){(v0->vx + v3->vx) >> 1, (v0->vy + v3->vy) >> 1, (v0->vz + v3->vz) >> 1};
@@ -223,10 +224,17 @@ static void RenderQuadRecursice(Face *face, SVECTOR *v0, SVECTOR *v1, SVECTOR *v
 		SVECTOR vm13 = (SVECTOR){(v1->vx + v3->vx) >> 1, (v1->vy + v3->vy) >> 1, (v1->vz + v3->vz) >> 1};
 		SVECTOR vm32 = (SVECTOR){(v3->vx + v2->vx) >> 1, (v3->vy + v2->vy) >> 1, (v3->vz + v2->vz) >> 1};
 
-		RenderQuadRecursice(face, v0, &vm01, &vm02, &vm03, level + 1, depth);
-		RenderQuadRecursice(face, &vm01, v1, &vm03, &vm13, level + 1, depth);
-		RenderQuadRecursice(face, &vm02, &vm03, v2, &vm32, level + 1, depth);
-		RenderQuadRecursice(face, &vm03, &vm13, &vm32, v3, level + 1, depth);
+ 		u_short tum01 = (tu0 + tu1) >> 1; u_short tvm01 = (tv0 + tv1) >> 1;
+    	u_short tum02 = (tu0 + tu2) >> 1; u_short tvm02 = (tv0 + tv2) >> 1;
+    	u_short tum03 = (tu0 + tu3) >> 1; u_short tvm03 = (tv0 + tv3) >> 1;
+    	u_short tum12 = (tu1 + tu2) >> 1; u_short tvm12 = (tv1 + tv2) >> 1;
+    	u_short tum13 = (tu1 + tu3) >> 1; u_short tvm13 = (tv1 + tv3) >> 1;
+    	u_short tum32 = (tu3 + tu2) >> 1; u_short tvm32 = (tv3 + tv2) >> 1;
+
+    	RenderQuadRecursive(face,    v0, &vm01, &vm02, &vm03,   tu0,   tv0, tum01, tvm01, tum02, tvm02, tum03, tvm03, level + 1, depth);  // top-left subquad
+    	RenderQuadRecursive(face, &vm01,    v1, &vm03, &vm13, tum01, tvm01,   tu1,   tv1, tum03, tvm03, tum13, tvm13, level + 1, depth);  // top-right subquad
+    	RenderQuadRecursive(face, &vm02, &vm03,    v2, &vm32, tum02, tvm02, tum03, tvm03,   tu2,   tv2, tum32, tvm32, level + 1, depth);  // bottom-left subquad
+    	RenderQuadRecursive(face, &vm03, &vm13, &vm32,    v3, tum03, tvm03, tum13, tvm13, tum32, tvm32,   tu3,   tv3, level + 1, depth);  // bottom-right subquad
 	}
 }
 
@@ -254,7 +262,7 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
         v3.vz = Clamp16Bit(track->vertices[face->indices[3]].vz - camera->position.vz);
 
 
-		RenderQuadRecursice(face, &v0, &v1, &v2, &v3, 0, depth);
+		RenderQuadRecursive(face, &v0, &v1, &v2, &v3, face->u0, face->v0, face->u1, face->v1,face->u2, face->v2, face->u3, face->v3, 0, depth);
 	}
 }
 
@@ -268,7 +276,7 @@ void RenderTrack(Track *track, Camera *camera) {
 
 	VECTOR dist;
 	u_long distmagsq;  // square root of distance magnitude
-
+	u_long distmag;
 	const long cameraposvx = camera->position.vx;
 	const long cameraposvy = camera->position.vy;
 	const long cameraposvz = camera->position.vz;
@@ -298,15 +306,14 @@ void RenderTrack(Track *track, Camera *camera) {
 		dist.vz = Clamp16Bit(currsection->center.vz - cameraposvz);
 
 		distmagsq = MagnitudeSquared(&dist);
-		const u_long distmag = SquareRoot12(distmagsq);  // 12 = fixed point
+		distmag = SquareRoot12(distmagsq);  // 12 = fixed point
 		if (distmag < MAX_DISTANCE) {
 			u_char depth = 0;
-			if (distancemag < 600000) {
-				depth = 1;
-			} else if (distancemag < 200000) {
+			if (distmag < 200000) {
 				depth = 2;
+			} else if (distmag < 600000) {
+				depth = 1;
 			}
-
 			RenderTrackSection(track, currsection, camera, depth);
 		}
 
