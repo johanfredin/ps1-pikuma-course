@@ -12,12 +12,6 @@
 static Texture *texturestore[MAX_TEXTURES];
 static u_short texturecount = 0;
 
-
-static u_short textx = 320;
-static u_short texty = 0;
-static u_short clutx = 320;
-static u_short cluty = 256;
-
 Texture *GetFromTextureStore(u_int i) { return texturestore[i]; }
 
 u_short GetTextureCount() { return texturecount; }
@@ -35,7 +29,7 @@ static inline void AddToTextureStore(Texture *t) {
 	}
 }
 
-static void AcquireTTFData(char *filename, long *timoffsets) {
+static inline void AcquireTTFData(char *filename, long *timoffsets) {
 	u_long length;
 	u_char *ttfbytes = (u_char *)FileRead(filename, &length);
 	u_short numtiles = length / BYTES_PER_TILE;	 // we have 42 bytes per tile
@@ -50,6 +44,7 @@ static void AcquireTTFData(char *filename, long *timoffsets) {
 		// Load the low-res tiles indices
 		u_short tileindex = GetShortBE(ttfbytes, &b);
 		Texture *texture = UploadTextureToVRAM(timoffsets[tileindex]);
+		AddToTextureStore(texture);
 	}
 
 	//TODO: Can probably ignore the tiles struct completely
@@ -63,13 +58,9 @@ void LoadTextureCMP(char *filename, char *filenamettf) {
 
 	Texture *texture = NULL;
 
-	// Acquire the texture data from the file
 	u_long length;
 	u_char *bytes = (u_char *)FileRead(filename, &length);
-
-	// Get num textures
 	u_short numtextures = GetLongLE(bytes, &b);
-	// printf("Num textures: %d\n", numtextures);
 
 	// The next values of the file are the size (in bytes) of each TIM texture (uncompressed)
 	u_long totaltimsize = 0;
@@ -103,29 +94,20 @@ void LoadTextureCMP(char *filename, char *filenamettf) {
 			AddToTextureStore(texture);
 		}
 	} else {
-		// If we are processing track tile textures we need to look at the TTF indices
-		// AcquireTTFData(filenamettf, timoffsets);
-		u_long length;
-		u_char *ttfbytes = (u_char *)FileRead(filenamettf, &length);
-		u_short numtiles = length / BYTES_PER_TILE;	 // we have 42 bytes per tile
-		u_long b = 0;
-
-		// Each tile holds info about resolution for the textures
-		for (int i = 0; i < numtiles; i++) {
-			// Skip high and mid res
-			PadSkip(&b, 32);
-			PadSkip(&b, 8);
-
-			// Load the low-res tiles indices
-			u_short tileindex = GetShortBE(ttfbytes, &b);
-			Texture *texture = UploadTextureToVRAM(timoffsets[tileindex]);
-		}
-		free3(ttfbytes);
+		AcquireTTFData(filenamettf, timoffsets);
 	}
+
 
 	// Since all textures are uploaded to VRAM we can deallocate the buffer
 	free3(timsbaseaddr);
 }
+
+
+
+static u_short textx = 320;
+static u_short texty = 0;
+static u_short clutx = 320;
+static u_short cluty = 256;
 
 Texture *UploadTextureToVRAM(long timpointer) {
 	// 1. Cast the timpointer to the correct type (TimClut4 or TimClut8)
@@ -139,23 +121,25 @@ Texture *UploadTextureToVRAM(long timpointer) {
 			TimClut4 *tc4 = (TimClut4 *)tim;
 			texture->type = CLUT4;
 
-			 // If the texture does not have textureX and textureY inside the TIM
+			// If the texture does not have textureX and textureY inside the TIM
 			if (!tc4->textureX && !tc4->textureY) {
 				tc4->textureX = textx;
 				tc4->textureY = texty;
 				tc4->clutX = clutx;
 				tc4->clutY = cluty;
 				tc4->clutW = 16;
-				tc4->clutH = 1;  // CLUT for 4-bit is always 16x1
+				tc4->clutH = 1;	 // CLUT for 4-bit is always 16x1
 
-				clutx += 16;    // always increment clutx by 16
-				if (clutx >= 384) { // if we go over 384 in x, we go back to x=320 and one row down in Y
+				clutx += 16;  // always increment clutx by 16
+				if (clutx >=
+					384) {	// if we go over 384 in x, we go back to x=320 and one row down in Y
 					clutx = 320;
 					cluty += 1;
 				}
 
 				texty += 32;  // always increment tile texture size down 32 pixels
-				if (texty >= 256) {  // if we go over 256 in y, we go back up and 8 pixels to the right
+				if (texty >=
+					256) {	// if we go over 256 in y, we go back up and 8 pixels to the right
 					textx += 8;
 					texty = 0;
 				}

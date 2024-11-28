@@ -57,7 +57,7 @@ void LoadTrackFaces(Track *track, char *filename, u_short texturestart) {
 		face->normal.vy = GetShortBE(bytes, &b);
 		face->normal.vz = GetShortBE(bytes, &b);
 
-		face->texture = GetChar(bytes, &b) + texturestart;
+		face->texture = GetChar(bytes, &b);
 
 		face->flags = GetChar(bytes, &b);
 
@@ -66,6 +66,7 @@ void LoadTrackFaces(Track *track, char *filename, u_short texturestart) {
 		face->color.b  = GetChar(bytes, &b);
 		face->color.cd = GetChar(bytes, &b);
 
+		texture += texturestart;
 		texture = GetFromTextureStore(face->texture);
 		face->tpage = texture->tpage;
 		face->clut  = texture->clut;
@@ -111,11 +112,11 @@ void LoadTrackSections(Track *track, char *filename) {
 		PadSkip(4, &b);
 
 		section->flags = GetShortBE(bytes, &b);
-		// section->id = GetShortBE(bytes, &b); // we dont care about this id so we simply skip and
+		section->id = GetShortBE(bytes, &b); // we dont care about this id so we simply skip and
 		// write over
 		section->id = i;
 
-		PadSkip(4, &b);
+		PadSkip(2, &b);
 	}
 
 	free3(bytes);
@@ -199,8 +200,6 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
 			setUV4(poly, face->u0, face->v0, face->u1, face->v1, face->u2, face->v2, face->u3, face->v3);
 			addPrim(GetOTAt(GetCurrBuff(), otz), poly);
 			IncrementNextPrim(sizeof(POLY_FT4));
-
-			DrawGrid(poly);
 		}
 	}
 }

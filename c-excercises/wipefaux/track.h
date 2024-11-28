@@ -15,9 +15,9 @@
 typedef struct Face {
 	short indices[4];
 	char flags;
-	char texture;
-	SVECTOR normal;
+    SVECTOR normal;
 	CVECTOR color;
+    char texture;
 	short clut;
 	short tpage;
 	short u0, v0;
