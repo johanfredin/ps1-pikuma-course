@@ -10,9 +10,7 @@
 #include "libgte.h"
 
 
-#define SHIP_MASS_DEFAULT 150
-
-void ShipInit(Ship *ship, Track *track, VECTOR *startpos) {
+void ShipInit(Ship *ship, Track *track, VECTOR *startpos, short mass, long thrustmax) {
     ship->vel = (VECTOR){0, 0, 0};
     ship->acc = (VECTOR){0, 0, 0};
 
@@ -35,34 +33,33 @@ void ShipInit(Ship *ship, Track *track, VECTOR *startpos) {
 
     ship->speed = 0;
     ship->thrustmag = 0;
-    ship->thrustmax = 7000;
+    ship->thrustmax = thrustmax;
 
-    ship->mass = SHIP_MASS_DEFAULT;
+    ship->mass = mass;
 }
 
 void ShipUpdate(Ship *ship) {
-    // Calculate ship matrix (bug in nugget if using rsin/rcos that is the faster option. using csin/ccos until fixed, linke to issue: https://github.com/grumpycoders/pcsx-redux/issues/1569)
-    short sinx = csin(ship->pitch);
-    short cosx = ccos(ship->pitch);
-    short siny = csin(ship->yaw);
-    short cosy = ccos(ship->yaw);
-    short sinz = csin(ship->roll);
-    short cosz = ccos(ship->roll);
+	short sinx = rsin(ship->pitch);
+	short cosx = rcos(ship->pitch);
+	short siny = rsin(ship->yaw);
+	short cosy = rcos(ship->yaw);
+	short sinz = rsin(ship->roll);
+	short cosz = rcos(ship->roll);
 
-    // COmput the right up and forward vectors with the orientation of the ship
-    ship->right.vx = ((cosy * cosz) >> 12) + ((((siny * sinx) >> 12) *sinz) >> 12);
-    ship->right.vy = (cosx * sinz) >> 12;
-    ship->right.vz = ((-siny * cosz) >> 12) + ((((cosy * sinz) >> 12) * sinz) >> 12);
+	// Compute the right, up, and forward vectors with the orientation of the ship
+	ship->right.vx = ((cosy * cosz) >> 12) + ((((siny * sinx) >> 12) * sinz) >> 12);
+	ship->right.vy = (cosx * sinz) >> 12;
+	ship->right.vz = ((-siny * cosz) >> 12) + ((((cosy * sinx) >> 12) * sinz) >> 12);
 
-    ship->up.vx = ((sinz * cosy) >> 12) + ((((siny * sinx) >> 12) *cosz) >> 12);
-    ship->up.vy = (cosx * cosz) >> 12;
-    ship->up.vz = ((-siny * -sinz) >> 12) + ((((cosy * sinx) >> 12) * cosz) >> 12);
+	ship->up.vx = ((-sinz * cosy) >> 12) + ((((siny * sinx) >> 12) * cosz) >> 12);
+	ship->up.vy = (cosx * cosz) >> 12;
+	ship->up.vz = ((-siny * -sinz) >> 12) + ((((cosy * sinx) >> 12) * cosz) >> 12);
 
-    ship->forward.vx = (siny * cosz) >> 12;
-    ship->forward.vy = -sinx;
-    ship->forward.vz = (cosy * cosx) >> 12;
+	ship->forward.vx = (siny * cosx) >> 12;
+	ship->forward.vy = (-sinx);
+	ship->forward.vz = (cosy * cosx) >> 12;
 
-    // Compute the thrust force vector based on the thrust magnitude (that is being modified using the joypad)
+	// Compute the thrust force vector based on the thrust magnitude (that is being modified using the joypad)
     ship->thrust.vx = (ship->thrustmag * ship->forward.vx) >> 12;
     ship->thrust.vy = (ship->thrustmag * ship->forward.vy) >> 12;
     ship->thrust.vz = (ship->thrustmag * ship->forward.vz) >> 12;
@@ -83,40 +80,52 @@ void ShipUpdate(Ship *ship) {
     force.vy += ship->thrust.vy;
     force.vz += ship->thrust.vz;
 
-    
+     // Set the acceleration in the direction of the new nose/forward axis
+	ship->acc.vx = (nosevel.vx - ship->vel.vx);
+	ship->acc.vy = (nosevel.vy - ship->vel.vy);
+	ship->acc.vz = (nosevel.vz - ship->vel.vz);
 
-    // Set the acceleration in the direction of the new nose/forward axis
-    ship->acc.vx = nosevel.vx - ship->vel.vx;
-    ship->acc.vy = nosevel.vy - ship->vel.vy;
-    ship->acc.vz = nosevel.vz - ship->vel.vz;
+	// The acceleration of the ship comes from F=ma (a=F/m)
+	ship->acc.vx += force.vx / ship->mass;
+	ship->acc.vy += force.vy / ship->mass;
+	ship->acc.vz += force.vz / ship->mass;
 
-    // The acceleration of the ship comes from F=ma (a=F/m)
-    ship->acc.vx += (force.vx / ship->mass);
-    ship->acc.vy += (force.vy / ship->mass);
-    ship->acc.vz += (force.vz / ship->mass);
+	// The velocity is computed based on the acceleration
+	ship->vel.vx += ship->acc.vx;
+	ship->vel.vy += ship->acc.vy;
+	ship->vel.vz += ship->acc.vz;
 
-    // The velocity is based on the acceleration
-    ship->vel.vx += ship->acc.vx;
-    ship->vel.vy += ship->acc.vy;
-    ship->vel.vz += ship->acc.vz;
+	// The new position is computed based on the velocity
+	ship->object->position.vx += ship->vel.vx >> 6;
+	ship->object->position.vy += ship->vel.vy >> 6;
+	ship->object->position.vz += ship->vel.vz >> 6;
 
-    // The position is computed based on the velocity
-    ship->object->position.vx += ship->vel.vx >> 6;
-    ship->object->position.vy += ship->vel.vy >> 6;
-    ship->object->position.vz += ship->vel.vz >> 6;
+	// Apply a roll movement based on the ship's angular yaw velocity
+	ship->velroll = ship->velyaw >> 4;
 
-    // Update object rotation matrix based on right, up and forward vectors (order of rotation: yaw --> pitch --> roll)
-    ship->object->rotmat.m[0][0] = ship->right.vx;
-    ship->object->rotmat.m[1][0] = ship->right.vy;
-    ship->object->rotmat.m[2][0] = ship->right.vz;
+	// Reduce/decay the roll velocity to restore it to the default orientation
+	ship->velroll -= ship->velroll >> 1;
 
-    ship->object->rotmat.m[0][1] = ship->up.vx;
-    ship->object->rotmat.m[1][1] = ship->up.vy;
-    ship->object->rotmat.m[2][1] = ship->up.vz;
+	// Update the yaw, pitch, and roll by their velocity
+	ship->yaw += ship->velyaw >> 6;
+	ship->pitch += ship->velpitch;
+	ship->roll += ship->velroll >> 1;
 
-    ship->object->rotmat.m[0][2] = ship->forward.vx;
-    ship->object->rotmat.m[1][2] = ship->forward.vy;
-    ship->object->rotmat.m[2][2] = ship->forward.vz;
+	// Restores/reduces the roll so the ship's canopy always points up
+	ship->roll -= ship->roll >> 3;
+
+	// Set the ship->object orientation matrix (order of rotation: Yaw --> Pitch --> Roll)
+	ship->object->rotmat.m[0][0] = ship->right.vx;
+	ship->object->rotmat.m[1][0] = ship->right.vy;
+	ship->object->rotmat.m[2][0] = ship->right.vz;
+
+	ship->object->rotmat.m[0][1] = ship->up.vx;
+	ship->object->rotmat.m[1][1] = ship->up.vy;
+	ship->object->rotmat.m[2][1] = ship->up.vz;
+
+	ship->object->rotmat.m[0][2] = ship->forward.vx;
+	ship->object->rotmat.m[1][2] = ship->forward.vy;
+	ship->object->rotmat.m[2][2] = ship->forward.vz;
 }
 
 void ShipDrawXYZAxis(Ship *ship, Camera *camera) {

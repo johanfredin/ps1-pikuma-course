@@ -23,11 +23,11 @@ typedef struct Ship {
 
     short mass;
     long speed;
-    short thrustmag;
-    short thrustmax;
+    long thrustmag;
+    long thrustmax;
 } Ship;
 
-void ShipInit(Ship *ship, Track *track, VECTOR *startpos);
+void ShipInit(Ship *ship, Track *track, VECTOR *startpos, short mass, long thrustmax);
 void ShipUpdate(Ship *ship);
 void ShipDrawXYZAxis(Ship *ship, Camera *camera);
 #endif

@@ -1,5 +1,6 @@
 #include "display.h"
 #include "globals.h"
+#include "libgpu.h"
 #include <libetc.h>
 
 static DoubleBuff screen;	// Struct to hold the display & draw buffers
@@ -42,6 +43,9 @@ void ScreenInit(void) {
 	SetGeomOffset(SCREEN_CENTER_X, SCREEN_CENTER_Y);
 	SetGeomScreen(SCREEN_Z);
 
+	FntLoad(960, 0);
+	FntOpen(20, 10, SCREEN_RES_X, 5, 0, 256);
+
 	// Enable display
 	SetDispMask(1);
 }
@@ -50,6 +54,8 @@ void ScreenInit(void) {
 // Draw the current frame primitives in the ordering table
 ///////////////////////////////////////////////////////////////////////////////
 void DisplayFrame(void) {
+	FntFlush(-1);
+
 	// Sync and wait for vertical blank
 	DrawSync(0);
 	VSync(0);
