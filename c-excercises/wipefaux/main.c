@@ -146,9 +146,8 @@ static void Update(void) {
 
 	// RenderSceneObjects(sceneobjs, &camera);
 	RenderObject(ship.object, &camera);
-	RenderTrack(&track, &camera);
+	RenderTrackAhead(&track, ship.section, &camera);
 	ShipDrawXYZAxis(&ship, &camera);
-	FntPrint("velyaw: %d, roll: %d\n", ship.velyaw, ship.velroll);
 }
 
 static void Render(void) { DisplayFrame(); }

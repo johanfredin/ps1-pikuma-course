@@ -48,6 +48,7 @@ static inline void AcquireTTFData(char *filename, long *timoffsets) {
 	}
 
 	//TODO: Can probably ignore the tiles struct completely
+	printf("All bytes read from file %s\n", filename);
 	free3(ttfbytes);
 }
 
@@ -68,10 +69,8 @@ void LoadTextureCMP(char *filename, char *filenamettf) {
 		u_long timsize;
 		timoffsets[i] = totaltimsize;  // stores the offset (in bytes) to access each TIM texture
 		timsize = GetLongLE(bytes, &b);
-		// printf("Found TIM size: %lu\n", timsize);
 		totaltimsize += timsize;
 	}
-	printf("Total size required for all TIMs is = %lu\n", totaltimsize);
 
 	// Allocate the total memory necessary for all uncompressed TIMs in this CMP file
 	timsbaseaddr = (char *)malloc3(totaltimsize);
@@ -99,6 +98,7 @@ void LoadTextureCMP(char *filename, char *filenamettf) {
 
 
 	// Since all textures are uploaded to VRAM we can deallocate the buffer
+	printf("All bytes read from file %s\n", filename);
 	free3(timsbaseaddr);
 }
 

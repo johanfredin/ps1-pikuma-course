@@ -424,15 +424,14 @@ Object *LoadObjectPRMs(char *filename, u_short texturestart) {
 	Object *curr = root;
 	while (b < length) {
 		LoadObjectPRM(curr, texturestart, bytes, &b);
-		printf("Bytes read: %lu out of %lu\n", b, length);
 		if (b >= length) {
-			printf("End of the line...\n");
 			curr->next = NULL;
 			break;
 		}
 		curr->next = (Object *)malloc3(sizeof(Object));
 		curr = curr->next;
 	}
+	printf("All bytes read from file %s\n", filename);
 
 	// Free the bytes
 	free3(bytes);

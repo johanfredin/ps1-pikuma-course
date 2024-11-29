@@ -1,41 +1,80 @@
 #include "ship.h"
+
+#include <stdio.h>
+
 #include "utils.h"
 
 #if DRAW_AXIS
 #include <stddef.h>
+
 #include "display.h"
 #include "globals.h"
 #include "libgpu.h"
-# endif
+#endif
 #include "libgte.h"
 
+#define vecDist(v1, v2) { (v1)->vx - (v2)->vx, (v1)->vy - (v2)->vy, (v1)->vz - (v2)->vz }
+
+//TODO: Shouldnt it be enough to simply check if the next section is closer?
+static inline void UpdateShipNearestSection(Ship *ship) {
+	Section *current = ship->section;
+	long mindist = 0x7fffffff;
+	for (u_char i = 0; i < 2; i++) {  // Max 2 iterations (i find it unlikely you would traverse more sections each 30th of a second)
+		VECTOR dist = vecDist(&current->center, &ship->object->position);
+        long distmag = SquareRoot12(vectorSquared(&dist));
+        if(SquareRoot12(vectorSquared(&dist)) < mindist) {
+            mindist = distmag;
+            ship->section = current;
+        }
+		current = current->next;
+	}
+}
 
 void ShipInit(Ship *ship, Track *track, VECTOR *startpos, short mass, long thrustmax) {
-    ship->vel = (VECTOR){0, 0, 0};
-    ship->acc = (VECTOR){0, 0, 0};
+	ship->vel = (VECTOR){0, 0, 0};
+	ship->acc = (VECTOR){0, 0, 0};
 
-    ship->object->position.vx = startpos->vx;
-    ship->object->position.vy = startpos->vy;
-    ship->object->position.vz = startpos->vz;
+	ship->object->position.vx = startpos->vx;
+	ship->object->position.vy = startpos->vy;
+	ship->object->position.vz = startpos->vz;
 
-    ship->thrust = (VECTOR) {0, 0, 0};
-    ship->drag = (VECTOR) {0, 0, 0};
+	ship->thrust = (VECTOR){0, 0, 0};
+	ship->drag = (VECTOR){0, 0, 0};
 
-    ship->yaw = 0;
-    ship->pitch = 0;
-    ship->roll = 0;
-    ship->velyaw = 0;
-    ship->velpitch = 0;
-    ship->velroll = 0;
-    ship->accyaw = 0;
-    ship->accpitch = 0;
-    ship->accroll = 0;
+	ship->yaw = 0;
+	ship->pitch = 0;
+	ship->roll = 0;
+	ship->velyaw = 0;
+	ship->velpitch = 0;
+	ship->velroll = 0;
+	ship->accyaw = 0;
+	ship->accpitch = 0;
+	ship->accroll = 0;
 
-    ship->speed = 0;
-    ship->thrustmag = 0;
-    ship->thrustmax = thrustmax;
+	ship->speed = 0;
+	ship->thrustmag = 0;
+	ship->thrustmax = thrustmax;
 
-    ship->mass = mass;
+	ship->mass = mass;
+
+	// Compute the closest track section
+	Section *root = track->sections;
+	Section *current = root;
+	long mindist = 0x7fffffff;
+	do {
+		VECTOR center = current->center;
+		VECTOR dist = {
+			center.vx - startpos->vx,
+			center.vy - startpos->vy,
+			center.vz - startpos->vz,
+		};
+		long distmag = SquareRoot12(vectorSquared(&dist));
+		if (distmag < mindist) {
+			mindist = distmag;
+			ship->section = current;
+		}
+		current = current->next;
+	} while (current != root);
 }
 
 void ShipUpdate(Ship *ship) {
@@ -59,28 +98,27 @@ void ShipUpdate(Ship *ship) {
 	ship->forward.vy = (-sinx);
 	ship->forward.vz = (cosy * cosx) >> 12;
 
-	// Compute the thrust force vector based on the thrust magnitude (that is being modified using the joypad)
-    ship->thrust.vx = (ship->thrustmag * ship->forward.vx) >> 12;
-    ship->thrust.vy = (ship->thrustmag * ship->forward.vy) >> 12;
-    ship->thrust.vz = (ship->thrustmag * ship->forward.vz) >> 12;
+	// Compute the thrust force vector based on the thrust magnitude (that is being modified using
+	// the joypad)
+	ship->thrust.vx = (ship->thrustmag * ship->forward.vx) >> 12;
+	ship->thrust.vy = (ship->thrustmag * ship->forward.vy) >> 12;
+	ship->thrust.vz = (ship->thrustmag * ship->forward.vz) >> 12;
 
-    // Compute the length of the velocity   
-    ship->speed = SquareRoot0(vectorSquared(&ship->vel));
+	// Compute the length of the velocity
+	ship->speed = SquareRoot0(vectorSquared(&ship->vel));
 
-    // Compute the forward velocity
-    VECTOR nosevel = {
-        (ship->speed * ship->forward.vx) >> 12, 
-        (ship->speed * ship->forward.vy) >> 12, 
-        (ship->speed * ship->forward.vz) >> 12
-    };
+	// Compute the forward velocity
+	VECTOR nosevel = {(ship->speed * ship->forward.vx) >> 12,
+					  (ship->speed * ship->forward.vy) >> 12,
+					  (ship->speed * ship->forward.vz) >> 12};
 
-    // The force is the sum of all forces (only thrust for now)
-    VECTOR force = (VECTOR){0, 0, 0};
-    force.vx += ship->thrust.vx;
-    force.vy += ship->thrust.vy;
-    force.vz += ship->thrust.vz;
+	// The force is the sum of all forces (only thrust for now)
+	VECTOR force = (VECTOR){0, 0, 0};
+	force.vx += ship->thrust.vx;
+	force.vy += ship->thrust.vy;
+	force.vz += ship->thrust.vz;
 
-     // Set the acceleration in the direction of the new nose/forward axis
+	// Set the acceleration in the direction of the new nose/forward axis
 	ship->acc.vx = (nosevel.vx - ship->vel.vx);
 	ship->acc.vy = (nosevel.vy - ship->vel.vy);
 	ship->acc.vz = (nosevel.vz - ship->vel.vz);
@@ -114,6 +152,9 @@ void ShipUpdate(Ship *ship) {
 	// Restores/reduces the roll so the ship's canopy always points up
 	ship->roll -= ship->roll >> 3;
 
+	// Update the closest ship section
+	UpdateShipNearestSection(ship);
+
 	// Set the ship->object orientation matrix (order of rotation: Yaw --> Pitch --> Roll)
 	ship->object->rotmat.m[0][0] = ship->right.vx;
 	ship->object->rotmat.m[1][0] = ship->right.vy;
@@ -130,99 +171,99 @@ void ShipUpdate(Ship *ship) {
 
 void ShipDrawXYZAxis(Ship *ship, Camera *camera) {
 #if DRAW_AXIS
-  SVECTOR v0, v1, v2;
-  int i;
-  long otz;
-  POLY_F3 *polya, *polyb, *polyc, *polyd;
-  LINE_F2 lineA, lineB, lineC;
+	SVECTOR v0, v1, v2;
+	int i;
+	long otz;
+	POLY_F3 *polya, *polyb, *polyc, *polyd;
+	LINE_F2 lineA, lineB, lineC;
 
-  VECTOR vec;
-  SVECTOR rot;
-  MATRIX worldmat;
-  MATRIX viewmat;
+	VECTOR vec;
+	SVECTOR rot;
+	MATRIX worldmat;
+	MATRIX viewmat;
 
-  rot.vx = 0;
-  rot.vy = 0;
-  rot.vz = 0;
-  RotMatrix(&rot, &worldmat);
-  TransMatrix(&worldmat, &ship->object->position);
-  ScaleMatrix(&worldmat, &ship->object->scale);
-  CompMatrixLV(&camera->lookat, &worldmat, &viewmat);
-  SetRotMatrix(&viewmat);
-  SetTransMatrix(&viewmat);
+	rot.vx = 0;
+	rot.vy = 0;
+	rot.vz = 0;
+	RotMatrix(&rot, &worldmat);
+	TransMatrix(&worldmat, &ship->object->position);
+	ScaleMatrix(&worldmat, &ship->object->scale);
+	CompMatrixLV(&camera->lookat, &worldmat, &viewmat);
+	SetRotMatrix(&viewmat);
+	SetTransMatrix(&viewmat);
 
-  polya = (POLY_F3*) GetNextPrim();
-  SetPolyF3(polya);
-  v0.vx = (short) (0);
-  v0.vy = (short) (0);
-  v0.vz = (short) (0);
-  v1 = v2 = v0;
-  otz  = RotTransPers(&v0, (long*)&polya->x0, NULL, NULL);
-  otz += RotTransPers(&v1, (long*)&polya->x1, NULL, NULL);
-  otz += RotTransPers(&v2, (long*)&polya->x2, NULL, NULL);
-  otz /= 3;
-  setRGB0(polya, 255, 255, 255);
-  addPrim(GetOTAt(GetCurrBuff(), otz), polya);
-  IncrementNextPrim(sizeof(POLY_FT3));
+	polya = (POLY_F3 *)GetNextPrim();
+	SetPolyF3(polya);
+	v0.vx = (short)(0);
+	v0.vy = (short)(0);
+	v0.vz = (short)(0);
+	v1 = v2 = v0;
+	otz = RotTransPers(&v0, (long *)&polya->x0, NULL, NULL);
+	otz += RotTransPers(&v1, (long *)&polya->x1, NULL, NULL);
+	otz += RotTransPers(&v2, (long *)&polya->x2, NULL, NULL);
+	otz /= 3;
+	setRGB0(polya, 255, 255, 255);
+	addPrim(GetOTAt(GetCurrBuff(), otz), polya);
+	IncrementNextPrim(sizeof(POLY_FT3));
 
-  polyb = (POLY_F3*) GetNextPrim();
-  SetPolyF3(polyb);
-  v0.vx = (short) (ship->forward.vx >> 3);
-  v0.vy = (short) (ship->forward.vy >> 3);
-  v0.vz = (short) (ship->forward.vz >> 3);
-  v1 = v2 = v0;
-  otz  = RotTransPers(&v0, (long*)&polyb->x0, NULL, NULL);
-  otz += RotTransPers(&v1, (long*)&polyb->x1, NULL, NULL);
-  otz += RotTransPers(&v2, (long*)&polyb->x2, NULL, NULL);
-  otz /= 3;
-  setRGB0(polyb, 0, 0, 0);
-  addPrim(GetOTAt(GetCurrBuff(), otz), polyb);
-  IncrementNextPrim(sizeof(POLY_FT3));
+	polyb = (POLY_F3 *)GetNextPrim();
+	SetPolyF3(polyb);
+	v0.vx = (short)(ship->forward.vx >> 3);
+	v0.vy = (short)(ship->forward.vy >> 3);
+	v0.vz = (short)(ship->forward.vz >> 3);
+	v1 = v2 = v0;
+	otz = RotTransPers(&v0, (long *)&polyb->x0, NULL, NULL);
+	otz += RotTransPers(&v1, (long *)&polyb->x1, NULL, NULL);
+	otz += RotTransPers(&v2, (long *)&polyb->x2, NULL, NULL);
+	otz /= 3;
+	setRGB0(polyb, 0, 0, 0);
+	addPrim(GetOTAt(GetCurrBuff(), otz), polyb);
+	IncrementNextPrim(sizeof(POLY_FT3));
 
-  polyc = (POLY_F3*) GetNextPrim();
-  SetPolyF3(polyc);
-  v0.vx = (short) (ship->right.vx >> 4);
-  v0.vy = (short) (ship->right.vy >> 4);
-  v0.vz = (short) (ship->right.vz >> 4);
-  v1 = v2 = v0;
-  otz  = RotTransPers(&v0, (long*)&polyc->x0, NULL, NULL);
-  otz += RotTransPers(&v1, (long*)&polyc->x1, NULL, NULL);
-  otz += RotTransPers(&v2, (long*)&polyc->x2, NULL, NULL);
-  otz /= 3;
-  setRGB0(polyc, 0, 0, 0);
-  addPrim(GetOTAt(GetCurrBuff(), otz), polyc);
-  IncrementNextPrim(sizeof(POLY_FT3));
+	polyc = (POLY_F3 *)GetNextPrim();
+	SetPolyF3(polyc);
+	v0.vx = (short)(ship->right.vx >> 4);
+	v0.vy = (short)(ship->right.vy >> 4);
+	v0.vz = (short)(ship->right.vz >> 4);
+	v1 = v2 = v0;
+	otz = RotTransPers(&v0, (long *)&polyc->x0, NULL, NULL);
+	otz += RotTransPers(&v1, (long *)&polyc->x1, NULL, NULL);
+	otz += RotTransPers(&v2, (long *)&polyc->x2, NULL, NULL);
+	otz /= 3;
+	setRGB0(polyc, 0, 0, 0);
+	addPrim(GetOTAt(GetCurrBuff(), otz), polyc);
+	IncrementNextPrim(sizeof(POLY_FT3));
 
-  polyd = (POLY_F3*) GetNextPrim();
-  SetPolyF3(polyd);
-  v0.vx = (short) -(ship->up.vx >> 4);
-  v0.vy = (short) -(ship->up.vy >> 4);
-  v0.vz = (short) -(ship->up.vz >> 4);
-  v1 = v2 = v0;
-  otz  = RotTransPers(&v0, (long*)&polyd->x0, NULL, NULL);
-  otz += RotTransPers(&v1, (long*)&polyd->x1, NULL, NULL);
-  otz += RotTransPers(&v2, (long*)&polyd->x2, NULL, NULL);
-  otz /= 3;
-  setRGB0(polyd, 0, 0, 0);
-  addPrim(GetOTAt(GetCurrBuff(), otz), polyd);
-  IncrementNextPrim(sizeof(POLY_FT3));
+	polyd = (POLY_F3 *)GetNextPrim();
+	SetPolyF3(polyd);
+	v0.vx = (short)-(ship->up.vx >> 4);
+	v0.vy = (short)-(ship->up.vy >> 4);
+	v0.vz = (short)-(ship->up.vz >> 4);
+	v1 = v2 = v0;
+	otz = RotTransPers(&v0, (long *)&polyd->x0, NULL, NULL);
+	otz += RotTransPers(&v1, (long *)&polyd->x1, NULL, NULL);
+	otz += RotTransPers(&v2, (long *)&polyd->x2, NULL, NULL);
+	otz /= 3;
+	setRGB0(polyd, 0, 0, 0);
+	addPrim(GetOTAt(GetCurrBuff(), otz), polyd);
+	IncrementNextPrim(sizeof(POLY_FT3));
 
-  // Draw blue line from origin to forward
-  SetLineF2(&lineA);
-  setXY2(&lineA, polya->x0, polya->y0, polyb->x0, polyb->y0);
-  setRGB0(&lineA, 55, 150, 255);
-  DrawPrim(&lineA);
+	// Draw blue line from origin to forward
+	SetLineF2(&lineA);
+	setXY2(&lineA, polya->x0, polya->y0, polyb->x0, polyb->y0);
+	setRGB0(&lineA, 55, 150, 255);
+	DrawPrim(&lineA);
 
-  // Draw red line from origin to right
-  SetLineF2(&lineB);
-  setXY2(&lineB, polya->x0, polya->y0, polyc->x0, polyc->y0);
-  setRGB0(&lineB, 255, 55, 87);
-  DrawPrim(&lineB);
+	// Draw red line from origin to right
+	SetLineF2(&lineB);
+	setXY2(&lineB, polya->x0, polya->y0, polyc->x0, polyc->y0);
+	setRGB0(&lineB, 255, 55, 87);
+	DrawPrim(&lineB);
 
-  // Draw green line from origin to up
-  SetLineF2(&lineC);
-  setXY2(&lineC, polya->x0, polya->y0, polyd->x0, polyd->y0);
-  setRGB0(&lineC, 10, 255, 110);
-  DrawPrim(&lineC);
+	// Draw green line from origin to up
+	SetLineF2(&lineC);
+	setXY2(&lineC, polya->x0, polya->y0, polyd->x0, polyd->y0);
+	setRGB0(&lineC, 10, 255, 110);
+	DrawPrim(&lineC);
 #endif
 }

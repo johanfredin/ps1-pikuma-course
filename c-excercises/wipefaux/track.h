@@ -16,6 +16,8 @@
 #define BYTES_PER_FACE      20
 #define BYTES_PER_SECTION  156
 
+#define MAX_VISIBLE_TRACKS 10
+
 typedef struct Face {
 	short indices[4];
 	char flags;
@@ -58,6 +60,6 @@ typedef struct Track {
 void LoadTrackVertices(Track *track, char *filename);       // <- .TRV file
 void LoadTrackFaces(Track *track, char *filename, u_short starttexture);          // <- .TRF file
 void LoadTrackSections(Track *track, char *filename);       // <- .TRS file
-void RenderTrack(Track *track, Camera *camera);
+void RenderTrackAhead(Track *track, Section *startsection, Camera *camera);
 
 #endif

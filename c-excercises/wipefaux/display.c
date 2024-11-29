@@ -44,7 +44,7 @@ void ScreenInit(void) {
 	SetGeomScreen(SCREEN_Z);
 
 	FntLoad(960, 0);
-	FntOpen(20, 10, SCREEN_RES_X, 5, 0, 256);
+	FntOpen(20, 10, SCREEN_RES_X, SCREEN_RES_Y, 0, SCREEN_RES_Y);
 
 	// Enable display
 	SetDispMask(1);

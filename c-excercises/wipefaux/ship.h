@@ -25,6 +25,8 @@ typedef struct Ship {
     long speed;
     long thrustmag;
     long thrustmax;
+
+    Section *section; // The section we are closest to
 } Ship;
 
 void ShipInit(Ship *ship, Track *track, VECTOR *startpos, short mass, long thrustmax);

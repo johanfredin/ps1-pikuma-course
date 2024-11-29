@@ -13,7 +13,6 @@ char *FileRead(char *filename, u_long *length) {
 		exit(1);
 	} 
 
-	printf("Found %s in the CD.\n", filename);
 	int numsectors = (filepos.size + 2047) / SECTOR;  		// compute the number of sectors to read from the file
 	char *buffer = (char *)malloc3(SECTOR * numsectors);  	// allocate buffer for the file
 	if (!buffer) {

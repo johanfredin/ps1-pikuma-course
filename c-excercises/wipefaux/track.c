@@ -239,7 +239,7 @@ static void RenderQuadRecursive(Face* face, SVECTOR *v0, SVECTOR *v1, SVECTOR *v
 	}
 }
 
-static inline void RenderTrackSection(Track *track, Section *section, Camera *camera, u_char depth) {
+static inline void RenderTrackSection(Track *track, Section *section, Camera *camera, u_char numsubdivs) {
     SVECTOR v0, v1, v2, v3;
 
 	for (u_long i = 0; i < section->numfaces; i++) {
@@ -263,21 +263,11 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
         v3.vz = Clamp16Bit(track->vertices[face->indices[3]].vz - camera->position.vz);
 
 
-		RenderQuadRecursive(face, &v0, &v1, &v2, &v3, face->u0, face->v0, face->u1, face->v1,face->u2, face->v2, face->u3, face->v3, 0, depth);
+		RenderQuadRecursive(face, &v0, &v1, &v2, &v3, face->u0, face->v0, face->u1, face->v1,face->u2, face->v2, face->u3, face->v3, 0, numsubdivs);
 	}
 }
 
-void RenderTrack(Track *track, Camera *camera) {
-	Section *root = track->sections;
-	Section *currsection = root;
-
-	VECTOR dist;
-	u_long distmagsq;  // square root of distance magnitude
-	u_long distmag;
-	const long cameraposvx = camera->position.vx;
-	const long cameraposvy = camera->position.vy;
-	const long cameraposvz = camera->position.vz;
-
+void RenderTrackAhead(Track *track, Section *startsection, Camera *camera) {
     // Set matrices
     MATRIX worldmat, viewmat;
     VECTOR pos = {0}; 
@@ -296,24 +286,28 @@ void RenderTrack(Track *track, Camera *camera) {
 	 * The last entries next element points back to the start of the list, so we use a do-while to
 	 * handle this behaviour
 	 */
-	do {
-		// Calculate distance between curr section center and camera
-		dist.vx = Clamp16Bit(currsection->center.vx - cameraposvx);
-		dist.vy = Clamp16Bit(currsection->center.vy - cameraposvy);
-		dist.vz = Clamp16Bit(currsection->center.vz - cameraposvz);
+	Section *currentsection = startsection;
+	u_char numsubdivs = 0;
+	for (u_char i = 0; i < MAX_VISIBLE_TRACKS; i++) {
+		if (i < 6) {
+			numsubdivs = 1;
+		} if(i < 2) {
+			numsubdivs = 2;
+		} 
+		RenderTrackSection(track, currentsection, camera, numsubdivs);
+		currentsection = currentsection->next;
+	}
 
-		distmagsq = vectorSquared(&dist);
-		distmag = SquareRoot12(distmagsq);  // 12 = fixed point
-		if (distmag < MAX_DISTANCE) {
-			u_char depth = 0;
-			if (distmag < 200000) {
-				depth = 2;
-			} else if (distmag < 600000) {
-				depth = 1;
-			}
-			RenderTrackSection(track, currsection, camera, depth);
+	// Render 2 the previous sections to fix clipping
+	currentsection = startsection->prev;
+	for (int i = 0; i < 2; i++) {
+		if (i < 3) {
+			numsubdivs = 1;
+		} if(i < 2 ){
+			numsubdivs = 2;
 		}
-
-		currsection = currsection->next;
-	} while (currsection != root);
+		RenderTrackSection(track, currentsection, camera, numsubdivs);
+		currentsection = currentsection->prev;
+	}
+	
 }
