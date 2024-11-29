@@ -8,9 +8,11 @@
 #include "globals.h"
 #include "joypad.h"
 #include "libgpu.h"
+#include "libgte.h"
 #include "object.h"
 #include "sys/types.h"
 #include "texture.h"
+#include "ship.h"
 #include "track.h"
 
 #define CAMERA_ROT_SPEED 50
@@ -19,7 +21,8 @@
 extern char __heap_start, __sp;
 
 Camera camera;
-Object *ships, *ship;
+Object *ships;
+Ship ship;
 Object *sceneobjs;
 
 Track track;
@@ -63,14 +66,13 @@ static void Setup(void) {
 	LoadTrackFaces(&track, "\\TRACK.TRF;1", trackstarttexture);
 	LoadTrackSections(&track, "\\TRACK.TRS;1");
 
-	// Load the current ship object from the linked list
-	ship = ships;
-
-	// Initialize ship's position in the scene
-	setVector(&ship->position, 32599, -347, -45310);
+	// Initialize ship
+	VECTOR startpos = {32599, -347, -45310};
+	ship.object = ships->next;
+	ShipInit(&ship, &track, &startpos);
 
 	// Initializes camera position
-	setVector(&camera.position, ship->position.vx, ship->position.vy - 700, ship->position.vz - 1600);
+	setVector(&camera.position, ship.object->position.vx, ship.object->position.vy - 700, ship.object->position.vz - 1600);
 	camera.lookat = (MATRIX){0};
 	camera.rotmat = (MATRIX){0};
 }
@@ -81,27 +83,41 @@ static void Update(void) {
 	JoyPadUpdate();
 
 	if (JoyPadCheck(PAD1_LEFT)) {
-		camera.position.vx -= CAMERA_ROT_SPEED;
+		ship.object->rotation.vy -= 10;
 	}
-
 	if (JoyPadCheck(PAD1_RIGHT)) {
-		camera.position.vx += CAMERA_ROT_SPEED;
+		ship.object->rotation.vy += 10;
 	}
-
 	if (JoyPadCheck(PAD1_UP)) {
-		camera.position.vz += SHIP_SPEED;
-		ship->position.vz += SHIP_SPEED;
+		ship.object->rotation.vx -= 10;
 	}
-
 	if (JoyPadCheck(PAD1_DOWN)) {
-		camera.position.vz -= SHIP_SPEED;
-		ship->position.vz -= SHIP_SPEED;
+		ship.object->rotation.vx += 10;
+	}
+	if (JoyPadCheck(PAD1_CROSS)) {
+		ship.thrustmag += 10;
+	} else if(ship.thrustmag > 0) {
+		ship.thrustmag -= 100;
+		if (ship.thrustmag < 0) {
+			ship.thrustmag = 0;
+		}
+		
 	}
 
-	CameraLookAt(&camera, &ship->position, &up);
+	if (ship.thrustmag > ship.thrustmax) {
+		ship.thrustmag = ship.thrustmax;
+	}
+
+	ShipUpdate(&ship);
+	
+	// Force camera to always be behind ship
+	camera.position.vx = ship.object->position.vx;
+	camera.position.vy = ship.object->position.vy - 500;
+	camera.position.vz = ship.object->position.vz - 800;
+	CameraLookAt(&camera, &ship.object->position, &up);
 
 	// RenderSceneObjects(sceneobjs, &camera);
-	RenderObject(ship, &camera);
+	RenderObject(ship.object, &camera);
 	RenderTrack(&track, &camera);
 }
 

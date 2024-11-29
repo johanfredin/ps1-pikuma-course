@@ -214,6 +214,7 @@ static void RenderQuadRecursive(Face* face, SVECTOR *v0, SVECTOR *v1, SVECTOR *v
 		*		|			|		   |
 		*		*-----------*----------*	
 		*	   (v2)		  (vm32)	   (v3)
+		
 		*/
 
 		// If lefel is < depth we keed sub-dividing out quad
