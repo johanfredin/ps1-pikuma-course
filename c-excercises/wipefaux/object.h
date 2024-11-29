@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include "camera.h"
+#include "libgte.h"
 
 #define TYPE_F3                1
 #define TYPE_FT3               2
@@ -333,7 +334,7 @@ typedef struct Object {
   short         numprimitives;    /* Number of primitives */
   PrimitiveNode *primitives;      /* Pointer to the buffer of primitives */
 
-  SVECTOR       rotation;         /* Model rotation */
+  MATRIX        rotmat;           /* Rotation matrix that encodes the orientation of the object */
   VECTOR        position;         /* Model position */
   VECTOR        scale;            /* Model scale */
   u_char infocus;

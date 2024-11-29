@@ -267,10 +267,6 @@ static inline void RenderTrackSection(Track *track, Section *section, Camera *ca
 	}
 }
 
-static inline long MagnitudeSquared(VECTOR *v) {
-	return (v->vx * v->vx) + (v->vy * v->vy) + (v->vz * v->vz);
-}
-
 void RenderTrack(Track *track, Camera *camera) {
 	Section *root = track->sections;
 	Section *currsection = root;
@@ -306,7 +302,7 @@ void RenderTrack(Track *track, Camera *camera) {
 		dist.vy = Clamp16Bit(currsection->center.vy - cameraposvy);
 		dist.vz = Clamp16Bit(currsection->center.vz - cameraposvz);
 
-		distmagsq = MagnitudeSquared(&dist);
+		distmagsq = vectorSquared(&dist);
 		distmag = SquareRoot12(distmagsq);  // 12 = fixed point
 		if (distmag < MAX_DISTANCE) {
 			u_char depth = 0;

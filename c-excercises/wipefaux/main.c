@@ -77,25 +77,27 @@ static void Setup(void) {
 	camera.rotmat = (MATRIX){0};
 }
 
+
+#define THRUST_MAG 1000
 static void Update(void) {
 	EmptyOT(GetCurrBuff());
 
 	JoyPadUpdate();
 
 	if (JoyPadCheck(PAD1_LEFT)) {
-		ship.object->rotation.vy -= 10;
+		ship.yaw -= 50;
 	}
 	if (JoyPadCheck(PAD1_RIGHT)) {
-		ship.object->rotation.vy += 10;
+		ship.yaw += 50;
 	}
 	if (JoyPadCheck(PAD1_UP)) {
-		ship.object->rotation.vx -= 10;
+		ship.pitch += 10;
 	}
 	if (JoyPadCheck(PAD1_DOWN)) {
-		ship.object->rotation.vx += 10;
+		ship.pitch -= 10;
 	}
 	if (JoyPadCheck(PAD1_CROSS)) {
-		ship.thrustmag += 10;
+		ship.thrustmag += THRUST_MAG;
 	} else if(ship.thrustmag > 0) {
 		ship.thrustmag -= 100;
 		if (ship.thrustmag < 0) {
@@ -111,14 +113,15 @@ static void Update(void) {
 	ShipUpdate(&ship);
 	
 	// Force camera to always be behind ship
-	camera.position.vx = ship.object->position.vx;
-	camera.position.vy = ship.object->position.vy - 500;
-	camera.position.vz = ship.object->position.vz - 800;
+	camera.position.vx = ship.object->position.vx - (ship.forward.vx >> 2);
+	camera.position.vy = ship.object->position.vy - (ship.forward.vy >> 2) + (up.vy >> 3);
+	camera.position.vz = ship.object->position.vz - (ship.forward.vz >> 2);
 	CameraLookAt(&camera, &ship.object->position, &up);
 
 	// RenderSceneObjects(sceneobjs, &camera);
 	RenderObject(ship.object, &camera);
 	RenderTrack(&track, &camera);
+	ShipDrawXYZAxis(&ship, &camera);
 }
 
 static void Render(void) { DisplayFrame(); }

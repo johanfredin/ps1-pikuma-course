@@ -7,6 +7,7 @@
 #include "display.h"
 #include "globals.h"
 #include "inline_n.h"
+#include "libgte.h"
 #include "malloc.h"
 #include "texture.h"
 #include "utils.h"
@@ -14,6 +15,15 @@
 #define LOG_OBJ 0
 
 #define NAME_LEN 16
+
+static inline void MatrixIdentity(MATRIX *m) {
+	m->m[0][0] = ONE; m->m[0][1] = 0; m->m[0][2] = 0;
+	m->m[1][0] = 0; m->m[1][1] = ONE; m->m[1][2] = 0;
+	m->m[2][0] = 0; m->m[2][1] = 0; m->m[2][2] = ONE;
+	m->t[0] = 0;
+	m->t[1] = 0;
+	m->t[2] = 0;
+}
 
 static inline void PadSkip(u_long *i, u_short skip) { *i += skip; }
 
@@ -399,7 +409,10 @@ static void LoadObjectPRM(Object *object, u_short texturestart, u_char *bytes, u
 	// Populate object's initial transform values
 	object->position = (VECTOR){object->origin.vx, object->origin.vy, object->origin.vz};
 	object->scale = (VECTOR){ONE, ONE, ONE};
-	object->rotation = (SVECTOR){0, 0, 0};
+	
+	MATRIX rotmat = {0};
+	MatrixIdentity(&rotmat);
+	object->rotmat = rotmat;
 }
 
 Object *LoadObjectPRMs(char *filename, u_short texturestart) {
@@ -437,10 +450,8 @@ void RenderObject(Object *object, Camera *camera) {
 	short nclip;
 	long otz, p, flg;
 
-	MATRIX worldmat;
 	MATRIX viewmat;
-
-	RotMatrix(&object->rotation, &worldmat);
+	MATRIX worldmat = object->rotmat; // Start the world matrix with the rotation matrix that comes from the object
 	TransMatrix(&worldmat, &object->position);
 	ScaleMatrix(&worldmat, &object->scale);
 
